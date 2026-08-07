@@ -14,21 +14,28 @@
 2. `it-dnanu-de/nixos-homelab` — **v1**: the opinionated PERSONAL homelab. Built fully, start to finish. Made **private** when v2 forks off.
 3. **v2** — a fork of v1, generalized so anyone can clone and customize. Public. Name decided at fork time.
 
-**v1 = everything, no scope cuts.** Every service in the §9 service map is built, verified, backed up, and documented. The media pipeline is the heart of the project.
+**The plan:** build v1 completely → private the v1 repo → fork v2 → build the installer + general polish in v2. Nothing else matters until v1 is done.
+
+**v1 = everything, no scope cuts.** Every service in the §9 service map is built, verified, backed up, and documented. The media pipeline is the heart of the project. **v1 is done when:** all service-map services deployed + verified on the Dell, restic backing up, §13 suite fully green, docs current, and the repo shaped so v2 is a fork + scrub.
+
+**v2 scope (for everyone):** the general template + the `install.sh` (fork → GitHub repo → interactive Q&A → generate config → print manual steps). **The website/blog is NOT in v2** (many people don't host blogs) — v2 documents how to add your own blog. Hugo stays a v1 personal add-on.
 
 **Media pipeline pattern** — the same story for every media type:
 `request service → *arr → indexer → downloader → *arr manages → tagging → player → client app`
 e.g. movies: `Seerr → Sonarr → Prowlarr → qBittorrent → Sonarr → metadata/tagging → Jellyfin → Infuse`.
 **Fewer services is better** — prefer services that cover multiple roles with good metadata. The exact stack is decided as each media type is built, not pre-frozen.
 
+**v1 in-scope (all media types):** movies + TV (Seerr/Sonarr/Radarr → Jellyfin), music (Lidarr/soularr/slskd/beets → Navidrome), audiobooks + podcasts (Audiobookshelf), books/comics/manga (Readarr + Booklore), plus Home Assistant, Beszel, restic→B2, Hugo, and the `.mobileconfig` generator.
+
 **Core rules:**
 - **Native modules preferred; containers allowed when justified** (media apps, Booklore). "Zero containers" was a phase-1 simplification; it is retired.
 - Downloader VPN isolation via **VPN-Confinement network namespaces** (AirVPN).
-- **Prod switch = change only `disko.nix` + `hardware-configuration.nix` + `zfsArcMax` in settings.nix.** Everything else identical.
+- **Prod switch = change only `disko.nix` + `hardware-configuration.nix` + `zfsArcMax` in settings.nix.** Everything else identical. The Dell is reformatted early in v1 to mirror `/fast` + `/slow` so this contract holds.
 - **Accounts are declarative** — created via occ/CLI oneshots on first install (idempotent), not web UI.
 - Data lives in DBs (postgres/sqlite) + `/fast`, backed up nightly via restic. Accounts persist across rebuilds (verified).
 - Verification per change: CI flake check + targeted smoke. Full §13 suite after milestones.
-- Docs ship in the same PR as the code they describe.
+- Docs ship in the same PR as the code they describe. English only.
+- Workflow: delegate → feature branch → PR → human merges → server pulls main. Checkpoint per milestone.
 
 ## 1. Philosophy & Hard Rules
 
