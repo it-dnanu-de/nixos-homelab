@@ -22,7 +22,10 @@
 - [x] `/fast/immich` — Immich-managed black box (service creates)
 - [x] `/fast/mail` — Maildir (SNM creates)
 - [x] `/fast/backups/postgres` — nightly dumps + restic source
-- [x] `/slow/shared-media/video|audio|literature`
+- [x] `/fast/containers` — Docker arr/request container config dirs (2026-08-08)
+- [x] `/slow/shared-media/video/{shows,movies}`
+- [x] `/slow/shared-media/audio/{music,audiobooks}` (podcasts dir dropped — out of scope)
+- [x] `/slow/shared-media/literature/{books}`
 - [x] `/slow/downloads/{qbittorrent,sabnzbd,slskd}` — *arr hardlink source
 - [x] `media` group + `SupplementaryGroups=media` on immich + nextcloud php (+ media services as built)
 

@@ -14,7 +14,7 @@
   - [ ] prints the manual steps the user must still do (DNSSEC/DS records at INWX, Speedport DHCP+port forwards, MACs, QR re-scan)
   - [ ] assumes the same service stack as this repo (Resend, Cloudflare, INWX, WireGuard, SNM, …)
   - [ ] declarative account provisioning (occ/CLI oneshots) for zero-touch first boot
-- [ ] **Website/blog is NOT in v2** (human ruling) — v2 documents how to add your own blog if wanted
+- [ ] **Website/blog is NOT in v2** (human ruling) — v2 documents how to add your own blog if wanted. Hugo site itself is a **v2** item (build a personal portfolio then, or let users add their own)
 - [ ] General polish: README product-quality, template-clean defaults, provider choices where sensible
 
 ## Deferred / "maybe later" (not v1, not necessarily v2)

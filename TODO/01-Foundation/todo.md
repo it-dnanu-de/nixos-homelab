@@ -26,7 +26,7 @@
 - [x] `secrets/secrets.yaml` encrypted, public-safe
 - [x] Registered in `modules/system/sops.nix`
 - [x] `cloudflare_account_token` added 2026-08-07 (tunnel ops)
-- [ ] Fill remaining `REPLACE_ME`: `airvpn_wg_conf`, `restic_password`, `nextcloud_admin_pass`, `vaultwarden_admin_token`, `slskd_env`, `booklore_db_password`
+- [ ] Fill remaining `REPLACE_ME`: `airvpn_wg_conf` (after AirVPN subscription), `restic_password` (B2 backup build). `nextcloud_admin_pass` + `vaultwarden_admin_token` are set. `slskd_env` kept (slskd optional). `booklore_db_password` removed 2026-08-08.
 
 ## WireGuard keygen (`scripts/gen-wg-keys.sh`)
 - [x] Idempotent two-pass v3→v4 rename

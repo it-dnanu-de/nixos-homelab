@@ -18,7 +18,7 @@
 
 **v1 = everything, no scope cuts.** Every service in the §9 service map is built, verified, backed up, and documented. The media pipeline is the heart of the project. **v1 is done when:** all service-map services deployed + verified on the Dell, restic backing up, §13 suite fully green, docs current, and the repo shaped so v2 is a fork + scrub.
 
-**v2 scope (for everyone):** the general template + the `install.sh` (fork → GitHub repo → interactive Q&A → generate config → print manual steps). **The website/blog is NOT in v2** (many people don't host blogs) — v2 documents how to add your own blog. Hugo stays a v1 personal add-on.
+**v2 scope (for everyone):** the general template + the `install.sh` (fork → GitHub repo → interactive Q&A → generate config → print manual steps). **The website/blog is NOT in v2** (many people don't host blogs) — v2 documents how to add your own blog. Hugo site → **v2** (human ruling 2026-08-08).
 
 **Media pipeline pattern** — the same story for every media type:
 `request service → *arr → indexer → downloader → *arr manages → player → client app`
@@ -49,7 +49,7 @@
 - **Web UI once, persists forever:** the DB-level state (download-client connections with API keys, indexers with credentials, root folders, quality profiles) lives in the bind-mounted `/config` volume — configured **once** via web UI, persists across every rebuild/reboot (same mechanism as Nextcloud/Vaultwarden DBs). No bootstrap scripts poking APIs — they rot (philosophy §1.1).
 - The web-UI-once step is part of the §12 "1% manual" list for the media milestone.
 
-**v1 in-scope (all media types):** movies + TV (Seerr → Radarr/Sonarr → Prowlarr → qBittorrent/SABnzbd → Jellyfin → LiquidFin), music (Mixarr → Lidarr → Prowlarr → downloaders → Jellyfin → LiquidFin), audiobooks (manual → Jellyfin → LiquidFin), books (Shelfarr → Livrarr/Readarr → Prowlarr → downloaders → Jellyfin → LiquidFin). Plus Home Assistant, Beszel, restic→B2, Hugo (v1 only), and the `.mobileconfig` generator.
+**v1 in-scope (all media types):** movies + TV (Seerr → Radarr/Sonarr → Prowlarr → qBittorrent/SABnzbd → Jellyfin → LiquidFin), music (Mixarr → Lidarr → Prowlarr → downloaders → Jellyfin → LiquidFin), audiobooks (manual → Jellyfin → LiquidFin), books (Shelfarr → Livrarr/Readarr → Prowlarr → downloaders → Jellyfin → LiquidFin). Plus Home Assistant (10 declared users), Beszel, restic→B2, and the `.mobileconfig` generator. Hugo site is **v2**.
 
 **Core rules:**
 - **Native modules preferred for infra; containers used where decided.** Media managers + request services run as **Docker containers** (`virtualisation.oci-containers`, backend docker) per the locked media stack. Jellyfin + Prowlarr native. "Zero containers" was a phase-1 simplification; it is retired.
@@ -254,12 +254,13 @@ services.postfix = {
 /fast/immich            # Immich-managed, black box
 /fast/mail              # Maildir
 /fast/backups/postgres  # nightly dumps, restic source
+/fast/containers        # bind-mounted /config dirs for the Docker arr/request containers
 /slow/shared-media/video/{shows,movies}
-/slow/shared-media/audio/{music,audiobooks,podcasts}
+/slow/shared-media/audio/{music,audiobooks}
 /slow/shared-media/literature/{books}
 /slow/downloads/{qbittorrent,sabnzbd,slskd}   # *arr hardlink source
 ```
-All media services + nextcloud + immich get supplementary group `media` (set via `SupplementaryGroups` on their systemd units).
+All media services + nextcloud + immich get supplementary group `media` (set via `SupplementaryGroups` on their systemd units). Podcasts + comics/manga dirs removed (dropped from scope, 2026-08-08).
 
 ## 6. Repo Structure
 
@@ -274,15 +275,17 @@ nixos-homelab/
 ├── .sops.yaml             # age public key
 ├── AGENTS.md              # how the agent system works
 ├── TODO/                  # work tracker (one folder per project area)
+├── docs/network-addressing.md  # human-authored v4 addressing authority (referenced by users.nix)
 ├── hosts/
 │   ├── homelab/{configuration.nix,hardware-configuration.nix,disko.nix}
-│   └── installer/         # custom ISO w/ ssh key for nixos-anywhere
+│   └── installer/         # v2: custom ISO w/ ssh key for nixos-anywhere (placeholder)
 └── modules/
     ├── networking/{acme,adguard,base,cloudflare,ddclient,kea,nginx,nginx-helpers,wireguard}.nix
     ├── services/{authelia,cloudflare-dns,collabora,immich,ios-profile,mail,nextcloud,vaultwarden}.nix
     ├── system/{sops,storage-layout,users,zfs}.nix
-    └── mobile-profile.nix
 ```
+
+`docs/network-addressing.md` is the **human-authored addressing authority** for the v4 schema (users.nix derives IPs from it). See OpenCode.md §3.1.
 
 ## 7. Secrets Inventory (sops-nix)
 
@@ -322,7 +325,7 @@ nixos-homelab/
 | slskd | `services.slskd` | via VPN bridge IP | ~ optional | confined; music downloader (only if kept — 2026-08-08 discussion) |
 | ~~beets~~ | — | — | 🗑 dropped | no tag post-processor (arrs manage, Jellyfin reads tags) |
 | ~~soularr~~ | — | — | 🗑 dropped | Lidarr↔slskd bridge dropped with beets/slskd |
-| Home Assistant | `services.home-assistant` | `home.nanulab.de` | ⬜ | `trusted_proxies` for nginx |
+| Home Assistant | `services.home-assistant` | `home.nanulab.de` | ⬜ | half-declared: 10 users declared in Nix, rest via web UI; `trusted_proxies` for nginx |
 | Beszel | `services.beszel.hub` + `.agent` | `status.nanulab.de` | ⬜ | agent monitors systemd units; mail-queue alert |
 | Restic | `services.restic.backups.b2` | — | ⬜ | §11 |
 | VPN | `vpnNamespaces.wg` (VPN-Confinement flake input) | — | ⬜ | `wireguardConfigFile`=sops; `portMappings`; `openVPNPorts`=AirVPN forwarded port; `systemd.services.{qbittorrent,sabnzbd,slskd}.vpnConfinement` |

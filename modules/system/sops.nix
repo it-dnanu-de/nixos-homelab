@@ -35,7 +35,6 @@
       };
       mobileca_key = {};
       mobileca_cert = {};
-      booklore_db_password = {};
     };
   };
 }

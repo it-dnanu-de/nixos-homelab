@@ -1,22 +1,16 @@
-# TODO — 12 Websites
+# TODO — 12 Websites (Hugo — v2, NOT v1)
 
-**Status:** ⬜ not started (build step 7) · **Owner:** Hugo · **File refs:** `websites/dnanu.de/`, `modules/networking/nginx.nix` (dnanu.de vhost)
+**Status:** ⬜ **v2** (human ruling 2026-08-08: Hugo moved to v2) · **Owner:** deferred · **File refs:** `websites/dnanu.de/`
 
-> Ruling R4: **Hugo**, content inside this git repo, built at `nixos-rebuild` time → static files nginx serves on 127.0.0.1:8080 behind the cloudflared tunnel.
+> The website/blog is NOT in v2's default (human ruling) and is a personal add-on in v1's successor.
+> Decision: **Hugo site → v2**. `websites/dnanu.de/` stays as a versioned placeholder.
 
-## Hugo site
-- [ ] `hugo.toml`
-- [ ] `content/_index.md` (portfolio landing)
+## When we build it (v2)
+- [ ] `hugo.toml` + `content/_index.md` (portfolio landing)
 - [ ] 5 sections mapping to email aliases: `wealth/`, `health/`, `it/`, `creative/`, `academic/` (each `_index.md` + `blog/*.md`)
-- [ ] `layouts/` custom theme (desktop + mobile responsive)
-- [ ] `static/` assets
+- [ ] `layouts/` custom theme (desktop + mobile responsive) + `static/`
 - [ ] Activation script: `hugo build` → `/var/www/dnanu.de`
-- [ ] Workflow: `hugo new it/blog/x.md` → write → git push → rebuild → live (no CI)
+- [ ] nginx dnanu.de vhost (already exists as placeholder on 127.0.0.1:8080) → point at Hugo output
 
-## Serving
-- [x] nginx dnanu.de vhost placeholder exists (127.0.0.1:8080)
-- [ ] Point it at Hugo output once built
-- [ ] Tunnel ingress already routes dnanu.de/www/autoconfig/mta-sts → 8080 ✅
-
-## autoconfig
-- [ ] `autoconfig.dnanu.de/mail/config-v1.1.xml` static XML (Thunderbird auto-setup) served by this vhost — in the build plan; verify it exists in nginx.nix during step 4 wiring
+## autoconfig (v1 — already wired)
+- [x] `autoconfig.dnanu.de/mail/config-v1.1.xml` served by the blogs vhost (Thunderbird auto-setup) — exists in mail.nix/nginx

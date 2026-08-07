@@ -25,7 +25,7 @@
 | 09 | [Media Player](09-Media-Players/todo.md) | ⬜ | Jellyfin (ONLY player) + LiquidFin client |
 | 10 | [Smart Home](10-Smart-Home/todo.md) | ⬜ | Home Assistant (in v1) |
 | 11 | [Monitoring & Backups](11-Monitoring-Backups/todo.md) | ⬜ | Beszel, Restic→B2, postgres dumps |
-| 12 | [Websites](12-Websites/todo.md) | ⬜ | Hugo (v1 only — NOT in v2) |
+| 12 | [Websites](12-Websites/todo.md) | ⬜ v2 | Hugo site → **v2** (2026-08-08 ruling) |
 | 13 | [Deployment](13-Deployment/todo.md) | ~ partial | runbook, 1% manual |
 | 14 | [Verification](14-Verification/todo.md) | ~ partial | §13 suite (target: fully green = v1 done) |
 | 15 | [v2 Backlog](15-v2-Backlog/todo.md) | ⬜ v2 only | fork + installer + general polish (NOT v1) |
@@ -36,6 +36,7 @@ prod-switch contract holds (only disko + hardware-config + zfsArcMax change).
 Then the media pipeline: **Downloads & VPN (07) → Arr Stack (08) → Media Players (09)**.
 
 ## Cross-cutting open items (blockers / manual)
+- [ ] **AirVPN subscription** — needed for `settings.nix vpn.forwardedPort` + `airvpn_wg_conf` secret (downloaders blocked until this)
 - [ ] **IPv6 inbound/outbound through Speedport** — AAAA published + resolving but v6 conns time out (internet.nl mail 61% / dnanu 90% fail only on IPv6). 1% manual router pass-through (OpenCode.md §3.5)
 - [ ] iza / kerem / hannah MACs still `TODO` in `users.nix` (blocks Kea reservations)
 - [ ] Declarative account creation (occ/CLI oneshots, idempotent) — design + build across services (OpenCode.md vision)
@@ -44,5 +45,5 @@ Then the media pipeline: **Downloads & VPN (07) → Arr Stack (08) → Media Pla
 - [ ] Distribute Authelia passwords (10 users)
 - [ ] Publish DS records at DENIC registrar (DNSSEC §3.7) — activates DANE (TLSA `3 1 1` already published + matching)
 - [ ] Flip DMARC `p=quarantine` → `p=reject` after 30 clean days
-- [ ] `sshPubKey` placeholder in `settings.nix` — replace with real human key
+- [ ] `sshPubKey` placeholder in `settings.nix` — none found on machine/server; human to provide
 - [ ] Prod migration: new hardware-configuration.nix + disko (2 pools) when hardware arrives (contract: only 3 files change)

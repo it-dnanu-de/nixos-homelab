@@ -1,6 +1,6 @@
 # TODO — 14 Verification
 
-**Status:** ~ partial (run per deploy; §13 suite) · **Owner:** verifier (Flash) · **Files:** `tests/` (results snapshots)
+**Status:** ~ partial (run per deploy; §13 suite) · **Owner:** deployer + joat · **Files:** `tests/` (results snapshots)
 
 ## Checklist (OpenCode.md §13)
 - [x] `dig @10.0.0.2 mail.dnanu.de` → 10.0.0.2

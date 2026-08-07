@@ -1,7 +1,6 @@
 # TODO — 13 Deployment
 
 **Status:** ~ partial · **Owner:** deployer · **File refs:** `hosts/homelab/`, `hosts/installer/`, skills/deployment
-
 ## Installer ISO (`hosts/installer/`)
 - [ ] Custom ISO with ssh key for nixos-anywhere (currently just `.gitkeep`)
 - [ ] SSH password auth enabled on ISO (per human ruling)

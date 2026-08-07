@@ -9,7 +9,7 @@
 
   domains = {
     public = "dnanu.de";          # mail + blogs
-    internal = "nanulab.de";     # Tailscale-only services
+    internal = "nanulab.de";     # VPN-only services (split-horizon DNS → 10.0.0.2)
     mail = "mail.dnanu.de";      # SMTP/IMAP/ManageSieve
     vpn = "vpn.dnanu.de";        # WireGuard endpoint (grey cloud, ddclient-managed)
   };
@@ -26,7 +26,7 @@
     prefixLength = 24;
     subnet = "10.0.0.0/24";      # LAN — allowed to reach local nginx TLS vhosts (AdGuard UI, profile)
     gateway = "10.0.0.1";
-    # Admin LAN IPs are now derived from users.nix (admin block 10.0.0.3-8).
+    # Admin LAN IPs are now derived from users.nix (admin block 10.0.0.3-9).
   };
 
   hostId = "2f69efe2";           # ZFS requires stable host ID — generate once, keep forever
@@ -39,7 +39,7 @@
   };
 
   vpn = {
-    forwardedPort = 0;           # placeholder — human sets from AirVPN dashboard (1% manual)
+    forwardedPort = 0;           # AirVPN static port for downloaders — human sets from AirVPN dashboard after subscribing (1% manual; still need the subscription)
   };
 
   # WireGuard remote-access VPN (OpenCode.md §3.3, v4 10.0.10.0/24).

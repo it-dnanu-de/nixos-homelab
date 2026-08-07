@@ -36,6 +36,8 @@
     # /fast/backups
     "d /fast/backups 2775 root media -"
     "d /fast/backups/postgres 2770 root postgres -"
+    # /fast/containers — bind-mounted /config dirs for the arr/request Docker containers
+    "d /fast/containers 2775 root media -"
     # /fast/immich + /fast/mail are created by their services (immich module,
     # SNM). Not listed here to avoid ownership fights.
 
@@ -47,7 +49,6 @@
     "d /slow/shared-media/audio 2775 root media -"
     "d /slow/shared-media/audio/music 2775 root media -"
     "d /slow/shared-media/audio/audiobooks 2775 root media -"
-    "d /slow/shared-media/audio/podcasts 2775 root media -"
     "d /slow/shared-media/literature 2775 root media -"
     "d /slow/shared-media/literature/books 2775 root media -"
 
