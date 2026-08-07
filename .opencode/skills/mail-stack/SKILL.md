@@ -26,17 +26,23 @@ description: Use when working on the mail system — simple-nixos-mailserver, Po
 SNM has no relay option; use Postfix directly:
 - `relayhost = [smtp.resend.com]:465`, user `resend`, password = API key.
 - `mapFiles."sasl_passwd"` from a sops template (mode 0600): `[smtp.resend.com]:465 resend:<API key>`.
-- `smtp_tls_wrappermode = yes`, `smtp_tls_security_level = encrypt`, `smtp_sasl_auth_enable = yes`, `smtp_sasl_security_options = noanonymous`.
+- `smtp_tls_wrappermode = yes`, `smtp_sasl_auth_enable = yes`, `smtp_sasl_security_options = noanonymous`.
+- Static `tls_policy` map with `[smtp.resend.com]:465 verify` (prepended before the tlspol socketmap) — CA+hostname-verified TLS on the money path. Do NOT set `smtp_tls_security_level = encrypt` globally (tlspol + tls_policy handle it).
 
 ## DNS records (Cloudflare, grey cloud unless noted)
 | Type | Name | Value |
 |------|------|-------|
 | A | mail.dnanu.de | dynamic home IP (ddclient), **must stay unproxied or SMTP dies** |
+| AAAA | mail.dnanu.de | home IPv6 GUA (ddclient, ipify-ipv6) |
 | MX | dnanu.de, nanulab.de | mail.dnanu.de prio 10 |
-| TXT | dnanu.de | SPF — copy Resend's domain-verification records exactly; Resend sends from its `send.` subdomain |
+| TXT | dnanu.de | SPF `v=spf1 -all` (nothing sends with envelope @dnanu.de; Resend uses `send.` subdomain) |
 | TXT/CNAME | per Resend dashboard | DKIM + SPF for send.dnanu.de |
-| TXT | _dmarc.dnanu.de | `v=DMARC1; p=quarantine; rua=mailto:admin@nanulab.de` -> `p=reject` after 1 month |
-| DNSSEC | dnanu.de, nanulab.de | enable via Cloudflare (human) — OpenCode.md requires it for mail + websites |
+| TXT | _dmarc.dnanu.de | `v=DMARC1; p=quarantine; rua=mailto:admin@dnanu.de` -> `p=reject` after 30 clean days |
+| TXT | _mta-sts.dnanu.de | `v=STSv1; id=...` (MTA-STS policy) |
+| TXT | _smtp._tls.dnanu.de | `v=TLSRPTv1; rua=mailto:admin@dnanu.de` |
+| TLSA | _25._tcp.mail.dnanu.de | `3 1 1 <SPKI>` — auto-synced via cloudflare-tlsa-sync |
+| CNAME | mta-sts.dnanu.de | `<tunnel-id>.cfargotunnel.com` (proxied) |
+| DNSSEC | dnanu.de, nanulab.de | enabled at Cloudflare, DS published at DENIC — activates DANE |
 
 ## Gotchas
 - Telekom inbound-25 flakiness is accepted; health-check via Beszel mail-queue alert.

@@ -8,31 +8,29 @@ description: Use when configuring or auditing security — DNSSEC, TLS/ACME, fir
 ## Zero-exposure model (OpenCode.md §3.2) — LOCKED
 | Flow | Path | Ports open on router |
 |------|------|----------------------|
-| Inbound SMTP | Internet -> mail.dnanu.de -> router fwd -> 10.0.0.2:25 | **25/tcp only** |
+| Inbound SMTP | Internet -> mail.dnanu.de -> router fwd -> 10.0.0.2:25 | **25/tcp** |
 | Public blogs + autoconfig | Cloudflare edge -> cloudflared tunnel -> nginx :8080 | none |
-| Everything else | Device -> Tailscale -> 10.0.0.2 | none |
+| Remote access | Internet -> vpn.dnanu.de -> router fwd UDP 51820 -> WireGuard | **51820/udp** |
+| Everything else | Device -> WireGuard -> 10.0.0.2 (nginx 443, mail 993+465, admin UIs) | none |
 | Outbound mail | Postfix -> smtp.resend.com:465 | none |
 | Downloads | confined netns -> AirVPN WireGuard | none |
 
+Host firewall (audit Finding 1): only 25/tcp + 51820/udp globally open; 53/80/443/465/587/993 source-scoped to LAN/ULA/link-local.
 - If you open a port that isn't in this table, stop and ask. The whole network architecture depends on it.
 
 ## TLS (OpenCode.md §8)
 - `security.acme` DNS-01 via Cloudflare/lego for `*.nanulab.de`, `*.dnanu.de`, `mail.dnanu.de`.
-- Cert group readable by nginx, dovecot2, postfix; `reloadServices` set. No HTTP-01 (port 80 closed).
+- Cert group readable by nginx, dovecot, postfix; `reloadServices` set. No HTTP-01 (port 80 closed).
 
-## DNSSEC (requested)
-- Enable DNSSEC on the Cloudflare zones for `dnanu.de` and `nanulab.de` (human action in the dashboard), then verify with `dig +dnssec ... SOA` (AD flag, RRSIG).
-- Keep mail SPF/DKIM/DMARC records correct while DNSSEC is on — a mismatched chain breaks delivery.
-- Reminder: `mail.dnanu.de` A record must stay grey-cloud/unproxied or SMTP breaks.
+## DNSSEC (OpenCode.md §3.7)
+- Enabled on both Cloudflare zones (`dnanu.de`, `nanulab.de`); DS records published at DENIC (1% manual).
+- Verify: `dig +dnssec +adflag dnanu.de @9.9.9.9` (AD bit), `delv dnanu.de`.
+- Keep mail SPF/DKIM/DMARC correct while DNSSEC is on — a mismatched chain breaks delivery.
+- `mail.dnanu.de` must stay grey-cloud/unproxied or SMTP breaks.
 
 ## SSH
 - Password auth is **intentionally allowed** on the homelab. Never disable it.
 - Keys are fine in addition; don't remove password support.
 
-## DNS/Split-horizon
-- AdGuard DNS rewrites: `*.nanulab.de` + `mail.dnanu.de` -> 10.0.0.2; everything else -> quad9 upstream. `mutableSettings = false` so rewrites stay declarative.
-- Public `*.nanulab.de` -> Tailscale `100.x` IP (grey cloud) so names resolve even off AdGuard.
-
-## Secret hygiene
-- sops-nix only; age key on USB + password manager, never in repo or /nix/store. Repo is public-safe.
-- Run the `security-reviewer` agent for any audit; it enforces the checklist above.
+## Mail anti-abuse (OpenCode.md §4.5)
+- postfix RFC-conformance restrictions; rspamd reject=12; MTA-STS enforce; TLS-RPT + DMARC reporting; DANE TLSA `3 1 1` auto-synced.

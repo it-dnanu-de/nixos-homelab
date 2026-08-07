@@ -22,12 +22,12 @@ swaks --to hey@dnanu.de --server <home-ip>    # inbound port 25 from outside
 # verify SPF/DKIM/DMARC records + DNSSEC for dnanu.de and nanulab.de
 ```
 
-## Services (over Tailscale)
+## Services (over VPN / LAN — *.nanulab.de is split-horizon)
 ```
-curl -I https://cloud.nanulab.de
-curl -I https://vault.nanulab.de
-curl -I https://home.nanulab.de
-# each *.nanulab.de service returns 200/3xx
+curl -kI https://cloud.nanulab.de
+curl -kI https://vault.nanulab.de
+curl -kI https://photos.nanulab.de
+# each *.nanulab.de service returns 200/3xx; guest IP -> 403; dead names -> 404
 ```
 
 ## Security
@@ -39,4 +39,4 @@ systemctl --failed                            # must be empty
 ```
 
 ## DNSSEC
-`dig +dnssec dnanu.de SOA` and `dig +dnssec nanulab.de SOA` -> AD flag set, RRSIG present, no SERVFAIL.
+`dig +dnssec +adflag dnanu.de @9.9.9.9` (AD bit set), `delv dnanu.de`, and the same for `nanulab.de`.

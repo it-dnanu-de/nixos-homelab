@@ -1,36 +1,20 @@
 ---
-description: "General-purpose workflow: gather info, write an inputs task file, route to a planner by complexity, get the plan reviewed, then execute with nixos-builder. Use for general work. /deploy, /review, /init etc. are special-purpose commands for their specific jobs."
+description: General work — describe what you want done. JOAT judges size, routes to role agents if needed, and drives it through branch + PR. The replacement for the old /task pipeline.
+agent: joat
 ---
 
-# Task — the general workflow
+# Task / general work
 
-You are the orchestrator. The human describes work (or you gather it from annotated files). Drive the four-stage pipeline:
+The human describes work. As JOAT, drive it to done via the direct + PR-gated flow.
 
-**Stage 1 — Gather & write `inputs/`** (you, the orchestrator)
-1. Understand what needs doing. Read the relevant files (OpenCode.md, TODO.md, Memory.md, current modules) if not already in context.
-2. Judge complexity and **recommend a planner tier**:
-   | Tier | Model | For |
-   |------|-------|-----|
-   | Low | planner-low (V4 Flash) | small fixes, single-file, docs |
-   | Medium | planner-med (V4 Pro) | module creation, multi-file, service config |
-   | High | planner-high (GLM 5.2) | architecture, hard debugging, locking decisions |
-   | Max | planner-max (Kimi K3) | security audits, major restructures |
-3. Write `inputs/[Task]-for-[Model].md`: goal, problem, deliverables, constraints, files affected, model recommendation. Follow the Session Workflow in OpenCode.md.
-4. **Pause — ask the human to confirm/override the tier.** Do not continue until approved.
+1. **Judge the size**:
+   - Small (≤ a few files, low risk): do it yourself on a feature branch, then PR.
+   - Medium (multi-file, new service, config change): get a short plan from `architect`, human approves, then `builder` executes.
+   - Risky (security/secrets/exposure): route through `reviewer` before merging.
+2. **Branch**: create `feat/<topic>` from main. Never commit to main.
+3. **Do the work** (yourself or via the role agents).
+4. **Verify** your work (build/parse/eval or server check).
+5. **Open a PR** against main with what changed + verification + any manual steps.
+6. Tell the human the PR is ready to review/merge.
 
-**Stage 2 — Planner writes `outputs/`**
-5. Route to the approved planner via the `task` tool. The planner reads `inputs/` and writes `outputs/[Task]-plan-by-[Model].md`. It must verify ⚠️ VERIFY flags against pinned `nixos-26.05`.
-6. Commit the inputs + outputs.
-
-**Stage 3 — Human reviews the plan**
-7. Present the plan summary. Wait for approval or requested changes. If changed, update the outputs file and recommit.
-
-**Stage 4 — Execute**
-8. Route execution to `nixos-builder` (V4 Pro), which reads `outputs/` and implements, building + committing per phase.
-9. If anything breaks, you troubleshoot (you are the troubleshooter tier). Loop until clean.
-
-## Rules
-- Commit after each stage (inputs, plan, execution). Push when the human asks or a milestone ends.
-- Public-safe: never commit secrets; Memory.md stays gitignored.
-- `OpenCode.md` is the single source of truth. Respect ✅ LOCKED / ⚠️ VERIFY.
-- For special-purpose work, use the dedicated commands instead: /deploy, /rebuild, /verify, /review, /init, /update, /secrets, /commit, /pr, /status.
+Scope: $ARGUMENTS
