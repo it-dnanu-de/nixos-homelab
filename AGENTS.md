@@ -45,9 +45,11 @@ feat/<topic> branch ──► work ──► PR ──► review ──► merge
 
 ## Operating rules (from OpenCode.md)
 
-1. **OpenCode.md is the single source of truth.** Build exactly what it specifies, nothing more.
+1. **OpenCode.md is the single source of truth.** Read the **Project Vision** section first — three repos (nixos=archived, nixos-homelab=v1 personal, v2=fork for everyone). Build exactly what it specifies, nothing more.
 2. **✅ LOCKED** = decided, don't revisit. **⚠️ VERIFY** = check against pinned `nixos-26.05` before use.
-3. **99% declarative.** Native NixOS modules only. Zero open ports except 25/tcp + 51820/udp.
-4. **Secrets via sops-nix.** Memory.md is gitignored. The repo is public-safe.
-5. **SSH password auth stays enabled** — never disable it (human ruling).
-6. **Commit after every coherent change.** Feature branches + PRs. Human merges.
+3. **Native NixOS modules preferred; containers allowed when justified.** VPN isolation always via VPN-Confinement netns.
+4. **Zero open ports** except 25/tcp + 51820/udp (WireGuard). Everything else through VPN/tunnel/netns.
+5. **Secrets via sops-nix.** Memory.md is gitignored. The repo is public-safe.
+6. **SSH password auth stays enabled** — never disable it (human ruling).
+7. **Commit after every coherent change.** Feature branches + PRs. Human merges.
+8. **Accounts are declarative** (occ/CLI oneshots on first install, idempotent).

@@ -7,16 +7,33 @@
 > Do not add services, containers, or dependencies not listed here.
 > Repo is public-safe. Secrets live in `secrets/secrets.yaml` (sops) and `Memory.md` (gitignored).
 
-## Intro
+## Project Vision (read this first)
 
-A single-node NixOS homelab for **dnanu.de** — self-hosted mail, private cloud, media pipeline, and remote-access VPN — built to last 20 years. Personal first; structured so it can later be forked into a reusable opinionated homelab (the `install.sh` / `nixos-homelab` idea lives in the Phase 2 backlog).
+**Three repos:**
+1. `it-dnanu-de/nixos` — **abandoned** (archive, pre-restructure).
+2. `it-dnanu-de/nixos-homelab` — **v1**: the opinionated PERSONAL homelab. Built fully, start to finish. Made **private** when v2 forks off.
+3. **v2** — a fork of v1, generalized so anyone can clone and customize. Public. Name decided at fork time.
 
-Working model: config is declared in this repo, deployed to the Dell test box at `10.0.0.2`, verified against a §13 suite. The repo is the source of truth; the server is where it becomes real.
+**v1 = everything, no scope cuts.** Every service in the §9 service map is built, verified, backed up, and documented. The media pipeline is the heart of the project.
+
+**Media pipeline pattern** — the same story for every media type:
+`request service → *arr → indexer → downloader → *arr manages → tagging → player → client app`
+e.g. movies: `Seerr → Sonarr → Prowlarr → qBittorrent → Sonarr → metadata/tagging → Jellyfin → Infuse`.
+**Fewer services is better** — prefer services that cover multiple roles with good metadata. The exact stack is decided as each media type is built, not pre-frozen.
+
+**Core rules:**
+- **Native modules preferred; containers allowed when justified** (media apps, Booklore). "Zero containers" was a phase-1 simplification; it is retired.
+- Downloader VPN isolation via **VPN-Confinement network namespaces** (AirVPN).
+- **Prod switch = change only `disko.nix` + `hardware-configuration.nix` + `zfsArcMax` in settings.nix.** Everything else identical.
+- **Accounts are declarative** — created via occ/CLI oneshots on first install (idempotent), not web UI.
+- Data lives in DBs (postgres/sqlite) + `/fast`, backed up nightly via restic. Accounts persist across rebuilds (verified).
+- Verification per change: CI flake check + targeted smoke. Full §13 suite after milestones.
+- Docs ship in the same PR as the code they describe.
 
 ## 1. Philosophy & Hard Rules
 
 1. **99% Declarative Rule.** NixOS declares infrastructure: ZFS, networking, services, users, paths, secrets, TLS. The human configures application *state* once via web UIs (admin accounts, indexers, libraries). No bootstrap scripts poking APIs — they rot.
-2. **Native NixOS modules only.** Zero containers in v1 (VPN via `VPN-Confinement` namespaces, not gluetun). If a service has no native module, it goes to Phase 2, not into podman. **Single sanctioned exception: Booklore** (pinned OCI image + native MariaDB, ruling R2).
+2. **Native NixOS modules preferred; containers allowed when justified.** Phase-1 "zero containers" is retired. Media apps and exceptions (e.g. Booklore) may run as containers/podman when a native module is missing or inadequate. VPN isolation always uses `VPN-Confinement` namespaces, not containers.
 3. **Zero open ports** except TCP 25 (inbound SMTP) + UDP 51820 (WireGuard), both forwarded to `10.0.0.2`. Everything else rides the WireGuard VPN, the Cloudflare tunnel, or a confined netns.
 4. **Stable channel, pinned flake.** `nixpkgs` follows `nixos-26.05`. No auto-upgrades. Human runs `nix flake update` deliberately, 2–4×/year.
 5. **Single-node monolith.** No clustering.
@@ -194,8 +211,9 @@ services.postfix = {
 
 ## 5. Storage (ZFS + disko)
 
-- `disko` targets `/dev/sda` (test) — human verifies device path at install. GPT: 1G ESP `/boot` + rest ZFS `rpool`.
-- Datasets: `rpool/nix` (/nix), `rpool/root` (/), `rpool/fast` → `/fast`, `rpool/slow` → `/slow`. Prod: pools `fast` (SSD mirror) + `slow` (HDD mirror), same mountpoints.
+- `disko` targets `/dev/sda` (test) — human verifies device path at install. GPT: 1G ESP `/boot` + ZFS root pool.
+- **Dell mirrors prod (2026-08-08 ruling):** the Dell is reformatted to have real `/fast` and `/slow` as separate ZFS datasets (different recordsize/compression, mimicking the future pools) so the prod switch is drop-in. Prod: pools `fast` (SSD mirror) + `slow` (HDD mirror), same mountpoints.
+- **Prod switch contract:** change only `disko.nix` + `hardware-configuration.nix` + `zfsArcMax` in settings.nix. Everything else (services, network, paths) identical.
 - **Mandatory:** `networking.hostId = "<8 hex>";` (generate once, keep forever) and `boot.kernelPackages = config.boot.zfs.package.latestCompatibleLinuxPackages;`
 - ARC cap: `boot.kernelParams = [ "zfs.zfs_arc_max=1073741824" ];` on Dell; `settings.nix` parameter.
 - **Directory layout is declarative** (`modules/system/storage-layout.nix`, systemd.tmpfiles, `root:media 2775` setgid):
