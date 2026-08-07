@@ -28,5 +28,4 @@
 
 ## Dependencies / watch
 - Readarr archived upstream — monitor; migration path to rreading-glasses mirror documented
-- Booklore container pinned tag — bump deliberately, never `:latest`
-- Euro-Office DocumentServer packaging status in nixpkgs — watch for upstream addition
+- Shelfarr (276★) packaging status in nixpkgs — watch; would give real ebook/audiobook management (2026-08-08 media decision) — Euro-Office DocumentServer packaging status in nixpkgs — watch for upstream addition

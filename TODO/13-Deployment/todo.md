@@ -26,7 +26,7 @@
 - [ ] Optional: `rm /var/lib/AdGuardHome/leases.json`
 - [ ] Revoke Tailscale OAuth + remove machines (Tailscale console)
 - [ ] Nextcloud admin + Mail app → local IMAP
-- [ ] Jellyfin/Navidrome/ABS/Booklore admin + libraries
+- [ ] Jellyfin admin + libraries
 - [ ] Prowlarr indexers; connect *arrs to downloaders
 - [ ] Seerr ↔ Jellyfin; Vaultwarden admin; HA onboarding; Beszel agent key
 - [x] mail-tester.com + internet.nl — **run 2026-08-07** (mail-tester 0.1 SPF/DKIM/DMARC pass; MECSA 100s; internet.nl dnanu 90%, mail 61% — only IPv6 fail). Flip DMARC reject after 30 clean days.
