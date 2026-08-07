@@ -43,6 +43,12 @@
 
 **Container rule (2026-08-08):** media managers + request services run as **Docker containers** via `virtualisation.oci-containers.containers.<name>` (backend `docker`), even though most have native modules — uniform runtime per human ruling. Jellyfin + Prowlarr stay native. Optionally generate from `docker-compose.yml` via `compose2nix` (packaged in 26.05, sops integration built in). Each container = a managed systemd unit; bind loopback-only ports, nginx proxies with ACLs.
 
+**Container declarability model (2026-08-08):**
+- **Fully declarative in Nix:** container image (pinned digest), ports (loopback), volumes (bind-mounts to `/slow`/`/fast`), environment + `environmentFiles` (sops), auto-start/restart. Never touch `docker` CLI.
+- **Declarative config seeding:** each app boots with a Nix-shipped `config.xml` (port, url base, auth) so it starts already-mostly-configured.
+- **Web UI once, persists forever:** the DB-level state (download-client connections with API keys, indexers with credentials, root folders, quality profiles) lives in the bind-mounted `/config` volume — configured **once** via web UI, persists across every rebuild/reboot (same mechanism as Nextcloud/Vaultwarden DBs). No bootstrap scripts poking APIs — they rot (philosophy §1.1).
+- The web-UI-once step is part of the §12 "1% manual" list for the media milestone.
+
 **v1 in-scope (all media types):** movies + TV (Seerr → Radarr/Sonarr → Prowlarr → qBittorrent/SABnzbd → Jellyfin → LiquidFin), music (Mixarr → Lidarr → Prowlarr → downloaders → Jellyfin → LiquidFin), audiobooks (manual → Jellyfin → LiquidFin), books (Shelfarr → Livrarr/Readarr → Prowlarr → downloaders → Jellyfin → LiquidFin). Plus Home Assistant, Beszel, restic→B2, Hugo (v1 only), and the `.mobileconfig` generator.
 
 **Core rules:**

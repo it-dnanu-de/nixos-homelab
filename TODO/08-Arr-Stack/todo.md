@@ -17,15 +17,16 @@
 
 ## Container definition pattern
 - [ ] `virtualisation.oci-containers.backend = "docker"`
-- [ ] Each container: pinned image digest (never `:latest`), loopback-only ports, volumes to `/slow/*`, TZ env
+- [ ] Each container: pinned image digest (never `:latest`), loopback-only ports, volumes to `/slow/*` + `/fast/containers/<app>:/config`, TZ env
+- [ ] **config.xml seeding**: Nix-shipped config file per app (port, url base, auth) so apps boot already-mostly-configured
 - [ ] nginx vhost per service (`*.nanulab.de`, user-tier ACL) proxying to loopback ports
 - [ ] sops secrets via `environmentFiles` (or compose2nix sops integration if we go compose route)
 - [ ] Optional: `compose2nix` (packaged 26.05) to generate config from a docker-compose.yml
 
 ## Native (non-container)
 - [ ] **Prowlarr** — indexer manager (`services.prowlarr`, native 26.05)
-- [ ] Connect all containers to Prowlarr (1% manual)
-- [ ] Connect managers to qBittorrent/SABnzbd (1% manual)
+- [ ] Connect all containers to Prowlarr (1% manual — web UI once, persists in /config)
+- [ ] Connect managers to qBittorrent/SABnzbd (1% manual — web UI once, persists in /config)
 - [ ] Hardlink completion into `/slow/shared-media`
 
 ## Unpackaged container images (verify at build time)
