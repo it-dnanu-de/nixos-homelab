@@ -1,5 +1,25 @@
 # Changes.md — temporary session log (wiped into OpenCode.md at end of session)
 
+## 2026-08-08 — Second definition pass (round 2 audit)
+
+### Decisions locked (human answers)
+- **users.nix = single source of truth for ALL services** (identity + email + per-service provisioning)
+- **11 mailboxes**: hey@, admin@, + 9 family (`<user>@dnanu.de`). Separate mailboxes per user. All 10 users provisioned on everything ("mail is not user-choice"). Current alias set kept.
+- **Email rule**: no server-initiated ALERT emails to hey@; transactional emails (Vaultwarden reset, Nextcloud shares) stay via postfix→Resend, From `app@dnanu.de`
+- **Glance dashboard** (`services.glance`, status.nanulab.de, admin-only) replaces email alerts; Beszel monitors everything; mail-queue-watch → status file → Glance
+- **Media vhosts**: media/tv/music/books.nanulab.de (user-facing) + [service].nanulab.de backends (admin-only); split-horizon DNS only
+- **WireGuard server-routed P2P**: AllowedIPs + 10.0.10.0/24, wg0 forwarding
+- Nextcloud `defaultapp = "dashboard"`; data on /fast/user/hey; apps = mail/calendar/contacts/richdocuments/files
+- Immich stays /fast/immich, full backup (media + DB); Vaultwarden individual vaults, keep SMTP; mail on /fast/mail
+- Jellyfin 10 declared users; HA 10 declared users; backups nightly 02:00 7/4/12; manual backup before reformat; full §13 after reformat
+
+### Doc updates
+- OpenCode.md: vision expanded (users/email/monitoring/media-vhosts/WG-P2P rules), §4.2 11 mailboxes, §4.5 D6 dashboard-only, §7 mail_<user>, §9 Glance + vhost URLs, §11 schedule/retention
+- TODO 03/04/06/08/09/11 updated
+
+---
+(previous session history preserved below)
+
 ## 2026-08-08 — Repo definition sweep (full audit + decisions)
 
 Complete pass over the nixos-homelab repo to make it a self-describing workspace.

@@ -49,14 +49,24 @@
 - **Web UI once, persists forever:** the DB-level state (download-client connections with API keys, indexers with credentials, root folders, quality profiles) lives in the bind-mounted `/config` volume — configured **once** via web UI, persists across every rebuild/reboot (same mechanism as Nextcloud/Vaultwarden DBs). No bootstrap scripts poking APIs — they rot (philosophy §1.1).
 - The web-UI-once step is part of the §12 "1% manual" list for the media milestone.
 
-**v1 in-scope (all media types):** movies + TV (Seerr → Radarr/Sonarr → Prowlarr → qBittorrent/SABnzbd → Jellyfin → LiquidFin), music (Mixarr → Lidarr → Prowlarr → downloaders → Jellyfin → LiquidFin), audiobooks (manual → Jellyfin → LiquidFin), books (Shelfarr → Livrarr/Readarr → Prowlarr → downloaders → Jellyfin → LiquidFin). Plus Home Assistant (10 declared users), Beszel, restic→B2, and the `.mobileconfig` generator. Hugo site is **v2**.
+**v1 in-scope (all media types):** movies + TV (Seerr → Radarr/Sonarr → Prowlarr → qBittorrent/SABnzbd → Jellyfin → LiquidFin), music (Mixarr → Lidarr → Prowlarr → downloaders → Jellyfin → LiquidFin), audiobooks (manual → Jellyfin → LiquidFin), books (Shelfarr → Livrarr/Readarr → Prowlarr → downloaders → Jellyfin → LiquidFin). Plus Home Assistant (10 declared users), Glance dashboard, Beszel, restic→B2, and the `.mobileconfig` generator. Hugo site is **v2**.
+
+**Users — single source of truth (2026-08-08):** `users.nix` is the single source for ALL services. Each user profile carries: tier, name, email (`<user>@dnanu.de`), device MACs, and per-service provisioning (mail, nextcloud, vault, HA, jellyfin). Every service module reads from `users.nix` — one place edits a user. **11 mailboxes** (hey@, admin@, + 9 family users), separate mailboxes per user, current alias set (hey@ 8 aliases + admin@ 5) kept. **All 10 users provisioned on everything** (mail, nextcloud, vault, HA, jellyfin); no per-user opt-out — "mail is not user-choice".
+
+**Email rule (2026-08-08):** **no server-initiated ALERT emails** to hey@ (watchdog/cron). Transactional emails users trigger (Vaultwarden password reset, Nextcloud share notifications) stay via local postfix → Resend relay, From `app@dnanu.de`. Alerts surface on the **Glance dashboard** instead.
+
+**Monitoring/alerting (2026-08-08):** no self-emails for alerts. **Glance** (`services.glance`, native 26.05) at `status.nanulab.de` (admin-only) = the status dashboard (service health + weather + RSS + service links). **Beszel** monitors everything (host + services + containers). `mail-queue-watch` stays but writes a **status file** that Glance reads (email part removed).
+
+**Media vhosts (2026-08-08):** user-facing: `media.nanulab.de`=Jellyfin, `tv.nanulab.de`=Seerr, `music.nanulab.de`=Mixarr, `books.nanulab.de`=Shelfarr. Backend *arrs/Prowlarr on `[service].nanulab.de` **admin-only**. All served by split-horizon DNS (no public records needed).
+
+**WireGuard P2P (2026-08-08):** server-routed peer-to-peer enabled — client `AllowedIPs` = `10.0.0.0/24` + `10.0.10.0/24`, wg0 forwarding on. Peers reach each other via the server. (AirDrop itself is Bluetooth/WiFi-direct, unaffected.)
 
 **Core rules:**
 - **Native modules preferred for infra; containers used where decided.** Media managers + request services run as **Docker containers** (`virtualisation.oci-containers`, backend docker) per the locked media stack. Jellyfin + Prowlarr native. "Zero containers" was a phase-1 simplification; it is retired.
 - Downloader VPN isolation via **VPN-Confinement network namespaces** (AirVPN).
 - **Prod switch = change only `disko.nix` + `hardware-configuration.nix` + `zfsArcMax` in settings.nix.** Everything else identical. The Dell is reformatted early in v1 to mirror `/fast` + `/slow` so this contract holds.
-- **Accounts are declarative** — created via occ/CLI oneshots on first install (idempotent), not web UI.
-- Data lives in DBs (postgres/sqlite) + `/fast`, backed up nightly via restic. Accounts persist across rebuilds (verified).
+- **Accounts are declarative** — created via occ/CLI oneshots on first install (idempotent), not web UI. `users.nix` is the single source.
+- Data lives in DBs (postgres/sqlite) + `/fast` (container config in `/fast/containers`), backed up nightly via restic (7/4/12, 02:00). Accounts persist across rebuilds (verified).
 - Verification per change: CI flake check + targeted smoke. Full §13 suite after milestones.
 - Docs ship in the same PR as the code they describe. English only.
 - Workflow: delegate → feature branch → PR → human merges → server pulls main. Checkpoint per milestone.
@@ -68,7 +78,7 @@
 3. **Zero open ports** except TCP 25 (inbound SMTP) + UDP 51820 (WireGuard), both forwarded to `10.0.0.2`. Everything else rides the WireGuard VPN, the Cloudflare tunnel, or a confined netns.
 4. **Stable channel, pinned flake.** `nixpkgs` follows `nixos-26.05`. No auto-upgrades. Human runs `nix flake update` deliberately, 2–4×/year.
 5. **Single-node monolith.** No clustering.
-6. **Single-user system.** One human. One mailbox identity (`hey@dnanu.de`), one services admin (`admin@dnanu.de`).
+6. **Single family, one human admin.** One services admin (`admin@dnanu.de`), 10 users (admin + 9 family), 11 mailboxes. `users.nix` is the single source of truth for users across all services.
 7. **Secrets via `sops-nix` (age).** Private age key lives on a USB drive + password manager, never in the repo. Repo is public-safe.
 8. **SSH password auth stays enabled** — intentional human ruling. Keys are fine in addition.
 
@@ -154,10 +164,12 @@ IPv6 **stays enabled** (human ruling 2026-08-05: needed for mail + modern infra;
 ### 4.1 Stack — ✅ LOCKED
 - **simple-nixos-mailserver** (Postfix + Dovecot + Rspamd): IMAP 993, submission 465 (SMTPS) + 587, LMTP, ManageSieve.
 - **Nextcloud** provides CalDAV/CardDAV/WebDAV + Mail web app. Stalwart is **not** used.
-- Inbound: port 25 direct. Outbound: Resend relay. No VPS relay. Accepted risk: Telekom inbound-25 flakiness → mail-queue watchdog (§4.5 D6).
-- **Hardening (2026-08-06/07):** postfix helo/sender/recipient RFC-conformance restrictions; rspamd reject=12 + stock RBLs (spamhaus off — public resolver path); TLS-RPT (`mailserver.tlsrpt`) + DMARC reporting (`mailserver.dmarcReporting`) both enabled; outbound Resend path pinned to `verify` via static tls_policy ahead of tlspol; DANE TLSA 3 1 1 auto-synced from the ACME cert; queue watchdog alerts via Resend API. **Verified green:** mail-tester 0.1 (SPF/DKIM/DMARC pass), MECSA 100s (TLS/DKIM/DMARC/DANE/DNSSEC/MTA-STS), haveDANE 3/3, dnsviz Secure.
+- Inbound: port 25 direct. Outbound: Resend relay. No VPS relay. Accepted risk: Telekom inbound-25 flakiness → `mail-queue-watch` (dashboard-only, §4.5 D6).
+- **Hardening (2026-08-06/07):** postfix helo/sender/recipient RFC-conformance restrictions; rspamd reject=12 + stock RBLs (spamhaus off — public resolver path); TLS-RPT (`mailserver.tlsrpt`) + DMARC reporting (`mailserver.dmarcReporting`) both enabled; outbound Resend path pinned to `verify` via static tls_policy ahead of tlspol; DANE TLSA 3 1 1 auto-synced from the ACME cert; mail-queue watchdog (dashboard-only, no email). **Verified green:** mail-tester 0.1 (SPF/DKIM/DMARC pass), MECSA 100s (TLS/DKIM/DMARC/DANE/DNSSEC/MTA-STS), haveDANE 3/3, dnsviz Secure.
 
-### 4.2 Accounts — ✅ LOCKED
+### 4.2 Accounts — ✅ LOCKED (11 mailboxes, driven by `users.nix`)
+All mailboxes derive from `users.nix` (2026-08-08 — single source of truth). 11 accounts: `hey@` (primary + 8 aliases + sieve), `admin@` (postmaster group), and 9 family users (`dumitru@`, `adela@`, `tiberiu@`, `david@`, `ramona@`, `tibisor@`, `iza@`, `kerem@`, `hannah@`). Each family user = separate mailbox, no aliases. Passwords per-user via sops (`mail_<user>`).
+
 ```nix
 mailserver = {
   enable = true;
@@ -165,20 +177,12 @@ mailserver = {
   domains = [ "dnanu.de" ];
   enableSubmission = true;     # 587
   enableSubmissionSsl = true;  # 465
-  accounts."hey@dnanu.de" = {
-    hashedPasswordFile = config.sops.secrets.mail_hey.path;
-    aliases = [ "it@" "health@" "wealth@" "creative@" "academic@"
-                "accounts@" "contact@" "partners@" ]; # @dnanu.de
-    sieveScript = '' ... per-alias fileinto :create ... '';
-  };
-  accounts."admin@dnanu.de" = {
-    hashedPasswordFile = config.sops.secrets.mail_admin.path;
-    aliases = [ "postmaster@" "hostmaster@" "webmaster@" "abuse@" "security@" ];
-  };
+  # accounts generated from users.nix: hey@ (aliases+sieve), admin@ (postmaster),
+  # and 9 family <user>@dnanu.de mailboxes — one per user, password via sops mail_<user>.
   x509.useACMEHost = "mail.dnanu.de"; # cert from security.acme DNS-01, group-readable by dovecot/postfix
 };
 ```
-Sieve logic: `if address :is "to" "it@dnanu.de" { fileinto :create "IT"; stop; }` × 8; fallthrough → INBOX (only `hey@` lands there). Sub-addressing `hey+foo@` ✅ `recipientDelimiter` verified.
+Sieve logic (hey@ only): `if address :is "to" "it@dnanu.de" { fileinto :create "IT"; stop; }` × 8; fallthrough → INBOX. Sub-addressing `hey+foo@` ✅ `recipientDelimiter` verified.
 
 ### 4.3 Outbound relay (Resend) — ✅ LOCKED
 SNM has no relay option; use Postfix directly:
@@ -236,7 +240,7 @@ services.postfix = {
 
 **Outbound TLS (D5):** Static `verify` policy for `[smtp.resend.com]:465` in `tls_policy` map (prepended before tlspol socketmap).
 
-**Monitoring (D6):** `mail-queue-watch` timer (15 min) alerts via Resend HTTPS API to `hey@dnanu.de` if postfix/dovecot/rspamd down, queue >2, or oldest >30 min. Rate-limited (6 h cooldown). Independent of local postfix. *(Note: the systemd unit is `dovecot.service`, not `dovecot2` — watchdog fixed 2026-08-08.)*
+**Monitoring (D6):** `mail-queue-watch` timer (15 min) checks postfix/dovecot/rspamd + queue size/oldest and writes a **status file** (`/var/lib/mail-alert/status.json`). **Glance** (dashboard) reads it — **no emails** (2026-08-08 ruling: no server-initiated alert emails). Rate-limit state kept for future use.
 
 **DMARC (D7):** `p=quarantine` now; flip to `p=reject` after 30-day clean report window.
 
@@ -289,7 +293,7 @@ nixos-homelab/
 
 ## 7. Secrets Inventory (sops-nix)
 
-`cloudflare_api_token`, `cloudflare_account_token`, `cloudflared_tunnel_cred`, `resend_api_key`, `mail_hey`, `mail_admin`, `airvpn_wg_conf`, `b2_account_id`, `b2_account_key`, `restic_password`, `nextcloud_admin_pass`, `vaultwarden_admin_token`, `slskd_env` (`SLSKD_SLSK_USERNAME/PASSWORD`), `authelia_jwt`, `authelia_storage_key`, `authelia_users_yaml` (10 users: admin + 9 regular), `mobileca_key`, `mobileca_cert`, `booklore_db_password`, `wireguard_server_private`, `wireguard_peer_<hostname>-vpn_private`, `wireguard_peer_<hostname>-vpn_psk` (97 peers × 2 = **194** WG keys).
+`cloudflare_api_token`, `cloudflare_account_token`, `cloudflared_tunnel_cred`, `resend_api_key`, `mail_hey`, `mail_admin`, `mail_<user>` (9 family mailboxes, one per user), `airvpn_wg_conf`, `b2_account_id`, `b2_account_key`, `restic_password`, `nextcloud_admin_pass`, `vaultwarden_admin_token`, `slskd_env` (`SLSKD_SLSK_USERNAME/PASSWORD`), `authelia_jwt`, `authelia_storage_key`, `authelia_users_yaml` (10 users: admin + 9 regular), `mobileca_key`, `mobileca_cert`, `wireguard_server_private`, `wireguard_peer_<hostname>-vpn_private`, `wireguard_peer_<hostname>-vpn_psk` (97 peers × 2 = **194** WG keys). *(booklore_db_password removed 2026-08-08.)*
 
 ## 8. TLS
 
@@ -312,11 +316,11 @@ nixos-homelab/
 | Collabora Online | `services.collabora-online` | `office.nanulab.de` | ✅ | Nextcloud Office backend; `ssl.enable=false`+`ssl.termination=true` (nginx terminates) |
 | Immich | `services.immich` | `photos.nanulab.de` | ✅ | `mediaLocation=/fast/immich`; ML off on Dell |
 | Vaultwarden | `services.vaultwarden` | `vault.nanulab.de` | ✅ | SQLite; `SIGNUPS_ALLOWED=false`; Argon2 ADMIN_TOKEN; declared SMTP via local postfix |
-| Jellyfin | `services.jellyfin` | `watch.nanulab.de` | ⬜ | **the ONLY player** — movies/TV/music/audiobooks/books. SNB iGPU: `intel-vaapi-driver`; prod: `intel-media-driver` |
+| Jellyfin | `services.jellyfin` | `media.nanulab.de` | ⬜ | **the ONLY player** — movies/TV/music/audiobooks/books. SNB iGPU: `intel-vaapi-driver`; prod: `intel-media-driver` |
 | ~~Navidrome~~ | ~~`services.navidrome`~~ | — | 🗑 dropped | replaced by Jellyfin (2026-08-08) |
 | ~~Audiobookshelf~~ | ~~`services.audiobookshelf`~~ | — | 🗑 dropped | podcasts dropped; audiobooks → Jellyfin library (manual) |
 | ~~Booklore~~ | ~~OCI container~~ | — | 🗑 dropped | e-books served by Jellyfin book library (2026-08-08) |
-| Seerr | `services.seerr` | `requests.nanulab.de` | ⬜ | requests for movies/shows (merged Plex/Jellyfin/Emby project) |
+| Seerr | container (`services.seerr` exists in 26.05) | `tv.nanulab.de` | ⬜ | requests for movies/shows (merged Plex/Jellyfin/Emby project); user-facing |
 | Sonarr/Radarr/Lidarr | `services.<name>` | `*.nanulab.de` | ⬜ | TV/movies/music managers; Readarr (books) pinned + rreading-glasses mirror |
 | ~~Prowlarr~~ | `services.prowlarr` | — | ⬜ | indexer manager (one for all arrs) |
 | ~~Bazarr~~ | — | — | 🗑 dropped | no subtitle layer (2026-08-08) |
@@ -326,8 +330,9 @@ nixos-homelab/
 | ~~beets~~ | — | — | 🗑 dropped | no tag post-processor (arrs manage, Jellyfin reads tags) |
 | ~~soularr~~ | — | — | 🗑 dropped | Lidarr↔slskd bridge dropped with beets/slskd |
 | Home Assistant | `services.home-assistant` | `home.nanulab.de` | ⬜ | half-declared: 10 users declared in Nix, rest via web UI; `trusted_proxies` for nginx |
-| Beszel | `services.beszel.hub` + `.agent` | `status.nanulab.de` | ⬜ | agent monitors systemd units; mail-queue alert |
-| Restic | `services.restic.backups.b2` | — | ⬜ | §11 |
+| Glance | `services.glance` | `status.nanulab.de` | ⬜ | status dashboard (admin-only): service health + weather + RSS + links; reads mail-queue status file; **replaces email alerts** |
+| Beszel | `services.beszel.hub` + `.agent` | via Glance | ⬜ | monitors host + services + containers (everything) |
+| Restic | `services.restic.backups.b2` | — | ⬜ | §11; nightly 02:00, 7/4/12 retention |
 | VPN | `vpnNamespaces.wg` (VPN-Confinement flake input) | — | ⬜ | `wireguardConfigFile`=sops; `portMappings`; `openVPNPorts`=AirVPN forwarded port; `systemd.services.{qbittorrent,sabnzbd,slskd}.vpnConfinement` |
 
 ## 10. The `.mobileconfig` / profile generator — ✅ LOCKED design
@@ -340,10 +345,10 @@ nixos-homelab/
 ## 11. Backups (Restic → Backblaze B2)
 
 - `services.postgresqlBackup` nightly: `nextcloud`, `immich` → `/fast/backups/postgres`.
-- Restic nightly, source = ZFS snapshot (crash-consistent) + dumps:
-  - **Include:** `/fast` (Nextcloud files, Immich, Maildir, dumps), `/var/lib` app state for every service in §9, `/etc/nixos`.
+- Restic nightly at **02:00** (2026-08-08), source = ZFS snapshot (crash-consistent) + dumps:
+  - **Include:** `/fast` (Nextcloud files, Immich media + DB, Maildir, dumps, `/fast/containers`), `/var/lib` app state for every service in §9, `/etc/nixos`.
   - **Exclude:** `/slow/shared-media`, `/slow/downloads`, caches.
-- `passwordFile` + `environmentFile` (B2 creds) from sops. Prune: 7 daily / 4 weekly / 12 monthly.
+- `passwordFile` + `environmentFile` (B2 creds) from sops. **Retention: 7 daily / 4 weekly / 12 monthly** (confirmed 2026-08-08). B2 region decided at backup build.
 - **Restore drill** (documented, tested once): new machine → `nixos-anywhere` → `restic restore` → reboot → done.
 
 ## 12. Deployment Runbook

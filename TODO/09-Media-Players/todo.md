@@ -4,7 +4,7 @@
 
 > **Jellyfin is the ONLY player, native NixOS module** (LOCKED 2026-08-08). Client = LiquidFin (user choice). Prowlarr (index manager) is also native. Managers + requests are containers (TODO 08).
 
-## Jellyfin (`services.jellyfin`) — `watch.nanulab.de`
+## Jellyfin (`services.jellyfin`) — `media.nanulab.de`
 - [ ] Libraries (all point into `/slow/shared-media`):
   - [ ] Movies: `/slow/shared-media/video/movies`
   - [ ] TV Shows: `/slow/shared-media/video/shows`
@@ -14,7 +14,7 @@
 - [ ] Reads *arr NFO/poster files natively
 - [ ] GPU: SNB iGPU → `intel-vaapi-driver`; prod → `intel-media-driver`
 - [ ] nginx user-tier vhost + ACL
-- [ ] Admin account + library setup (1% manual)
+- [ ] **10 users declared** (admin + 9 family, from users.nix — 2026-08-08) + library setup (1% manual)
 - [ ] `media` group (already defined; Jellyfin joins it)
 
 ## Client

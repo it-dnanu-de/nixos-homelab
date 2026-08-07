@@ -19,9 +19,13 @@
 - [ ] `virtualisation.oci-containers.backend = "docker"`
 - [ ] Each container: pinned image digest (never `:latest`), loopback-only ports, volumes to `/slow/*` + `/fast/containers/<app>:/config`, TZ env
 - [ ] **config.xml seeding**: Nix-shipped config file per app (port, url base, auth) so apps boot already-mostly-configured
-- [ ] nginx vhost per service (`*.nanulab.de`, user-tier ACL) proxying to loopback ports
 - [ ] sops secrets via `environmentFiles` (or compose2nix sops integration if we go compose route)
 - [ ] Optional: `compose2nix` (packaged 26.05) to generate config from a docker-compose.yml
+
+## Vhost scheme (2026-08-08)
+- [ ] **User-facing:** `media.nanulab.de`=Jellyfin, `tv.nanulab.de`=Seerr, `music.nanulab.de`=Mixarr, `books.nanulab.de`=Shelfarr (user-tier ACL)
+- [ ] **Backend (admin-only):** `sonarr.nanulab.de`, `radarr.nanulab.de`, `lidarr.nanulab.de`, `readarr.nanulab.de`, `livrarr.nanulab.de`, `prowlarr.nanulab.de` (admin-tier ACL)
+- [ ] DNS = split-horizon only (existing `*.nanulab.de` → 10.0.0.2 rewrite; no public records)
 
 ## Native (non-container)
 - [ ] **Prowlarr** — indexer manager (`services.prowlarr`, native 26.05)

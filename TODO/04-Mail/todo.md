@@ -10,6 +10,7 @@
 ## Accounts (OpenCode.md §4.2)
 - [x] `hey@dnanu.de`: 8 aliases (it/health/wealth/creative/academic/accounts/contact/partners) + sieve fileinto rules
 - [x] `admin@dnanu.de`: postmaster/hostmaster/webmaster/abuse/security aliases
+- [ ] **9 family mailboxes** (`dumitru@ adela@ tiberiu@ david@ ramona@ tibisor@ iza@ kerem@ hannah@`) — derive from users.nix (2026-08-08), sops `mail_<user>` per account
 - [x] `recipientDelimiter` sub-addressing (`hey+foo@`)
 - [x] hashedPasswordFile from sops
 
@@ -35,7 +36,8 @@
 - [x] MTA-STS enforce mode
 
 ## Monitoring (D6)
-- [x] `mail-queue-watch` timer (15 min): postfix/dovecot/rspamd down, queue >2, oldest >30 min → Resend API → hey@
+- [x] `mail-queue-watch` timer (15 min): postfix/dovecot/rspamd down, queue >2, oldest >30 min
+- [ ] **Dashboard-only (2026-08-08):** remove Resend email part → write status file → Glance reads it. No alert emails.
 - [x] 6h cooldown, independent of local postfix
 - [x] TLSA-sync failure alert (OnFailure → Resend)
 

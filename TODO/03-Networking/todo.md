@@ -23,6 +23,7 @@
 ## WireGuard (`wireguard.nix`)
 - [x] Server `10.0.10.2/24`, endpoint `vpn.dnanu.de:51820`
 - [x] **97 peers pre-provisioned** (7 admin + 90 user), split-tunnel, DNS 10.0.0.2
+- [ ] **Server-routed P2P (2026-08-08):** client AllowedIPs → `10.0.0.0/24 + 10.0.10.0/24`, wg0 forwarding on. Peers reach each other via server.
 - [ ] Re-scan ALL QRs on devices post-deploy (deployed gen is old v2 subnet)
 - [ ] Spare slots: fill MACs in users.nix + rebuild
 

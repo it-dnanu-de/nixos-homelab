@@ -12,7 +12,8 @@
 - [x] nginx user-tier vhost + ACL (merged on module's auto-vhost)
 - [x] CalDAV/CardDAV/WebDAV endpoints (for mobile profile)
 - [x] `postgresqlBackup` nightly → `/fast/backups/postgres`
-- [x] Declarative warning fixes: maintenance window 02:30, phone region DE, serverId, log_type=file, opcache buffer 32
+- [x] Declarative warning fixes: maintenance window 02:30, phone region DE, serverId, log_type=file, opcache buffer 32, default_language=en, default_locale=en_US
+- [ ] `defaultapp = "dashboard"` (change from `files`, 2026-08-08 ruling)
 - [x] **Nextcloud Office → Collabora** wired: richdocuments 10.3.0 + wopi_url=`https://office.nanulab.de` (occ oneshot, activate-config clean)
 - [ ] Nextcloud Mail app linked to local IMAP (1% manual: login → link `mail.dnanu.de:993` as hey@)
 - [ ] **Declarative account creation** — human requested (not built; solution design pending)
