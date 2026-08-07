@@ -21,11 +21,29 @@
 **v2 scope (for everyone):** the general template + the `install.sh` (fork → GitHub repo → interactive Q&A → generate config → print manual steps). **The website/blog is NOT in v2** (many people don't host blogs) — v2 documents how to add your own blog. Hugo stays a v1 personal add-on.
 
 **Media pipeline pattern** — the same story for every media type:
-`request service → *arr → indexer → downloader → *arr manages → tagging → player → client app`
-e.g. movies: `Seerr → Sonarr → Prowlarr → qBittorrent → Sonarr → metadata/tagging → Jellyfin → Infuse`.
-**Fewer services is better** — prefer services that cover multiple roles with good metadata. The exact stack is decided as each media type is built, not pre-frozen.
+`request service → *arr → indexer → downloader → *arr manages → player → client app`
 
-**v1 in-scope (all media types):** movies + TV (Seerr/Sonarr/Radarr → Jellyfin), music (Lidarr/soularr/slskd/beets → Navidrome), audiobooks + podcasts (Audiobookshelf), books/comics/manga (Readarr + Booklore), plus Home Assistant, Beszel, restic→B2, Hugo, and the `.mobileconfig` generator.
+**Media stack — ✅ LOCKED (2026-08-08):**
+| Role | Choice |
+|---|---|
+| Client | **LiquidFin** (Apple: iPhone/iPad/Mac/Apple TV/Watch; movies/TV/music/audiobooks/books; offline downloads; Jellyseerr built-in) |
+| Player | **Jellyfin** (the ONLY player — movies, TV, music, audiobooks, books) |
+| Movies manager | **Radarr** |
+| TV manager | **Sonarr** |
+| Music manager | **Lidarr** |
+| Books manager | **Readarr** (pinned + rreading-glasses mirror) |
+| Indexer manager | **Prowlarr** |
+| Downloaders | **qBittorrent + SABnzbd** (+ optional slskd for music), all VPN-confined |
+| Requests | **Seerr** (native 26.05 module; merged project covering Plex/Jellyfin/Emby) for movies+TV |
+| Audiobooks | **manual** (no good arr exists; drop files into Jellyfin audiobook library) |
+| Podcasts | **dropped** |
+| Comics/manga | **dropped** (e-books only) |
+| Music requests / book+audiobook managers | **undecided** — Mixarr (150★), Livrarr (20★), Shelfarr (276★) are real but NOT in nixpkgs; decision deferred, see TODO 08 |
+| beets / Bazarr / soularr / slskd | **dropped** (no separate metadata/tagging layer; the arrs manage + Jellyfin reads tags) |
+
+Rules: **one player (Jellyfin), one client (LiquidFin, personal v1 choice; v2 server stays client-agnostic)**. "Fewer services is better." The arrs are the file managers — no separate organizer. Podcasts and comics/manga are out of scope.
+
+**v1 in-scope (all media types):** movies + TV (Seerr → Radarr/Sonarr → Prowlarr → qBittorrent/SABnzbd → Jellyfin → LiquidFin), music (Lidarr → Prowlarr → downloaders → Jellyfin → LiquidFin), audiobooks (manual → Jellyfin → LiquidFin), books (Readarr → Prowlarr → downloaders → Jellyfin → LiquidFin). Plus Home Assistant, Beszel, restic→B2, Hugo (v1 only), and the `.mobileconfig` generator.
 
 **Core rules:**
 - **Native modules preferred; containers allowed when justified** (media apps, Booklore). "Zero containers" was a phase-1 simplification; it is retired.
@@ -285,17 +303,19 @@ nixos-homelab/
 | Collabora Online | `services.collabora-online` | `office.nanulab.de` | ✅ | Nextcloud Office backend; `ssl.enable=false`+`ssl.termination=true` (nginx terminates) |
 | Immich | `services.immich` | `photos.nanulab.de` | ✅ | `mediaLocation=/fast/immich`; ML off on Dell |
 | Vaultwarden | `services.vaultwarden` | `vault.nanulab.de` | ✅ | SQLite; `SIGNUPS_ALLOWED=false`; Argon2 ADMIN_TOKEN; declared SMTP via local postfix |
-| Jellyfin | `services.jellyfin` | `watch.nanulab.de` | ⬜ | SNB iGPU: `intel-vaapi-driver`; prod: `intel-media-driver` |
-| Navidrome | `services.navidrome` | `music.nanulab.de` | ⬜ | `settings.MusicFolder=/slow/shared-media/audio/music` |
-| Audiobookshelf | `services.audiobookshelf` | `listen.nanulab.de` | ⬜ | podcasts + audiobooks, manager AND player |
-| Booklore | OCI container (`ghcr.io/booklore-app/booklore:<pinned-tag>`) | `books.nanulab.de` | ⬜ | single sanctioned container exception; MariaDB via `services.mysql.package = pkgs.mariadb` |
-| Seerr | `services.seerr` | `requests.nanulab.de` | ⬜ | requests for movies/shows |
-| Sonarr/Radarr/Lidarr/Readarr*/Prowlarr/Bazarr | `services.<name>` | `*.nanulab.de` | ⬜ | *Readarr pinned-archived + rreading-glasses mirror |
+| Jellyfin | `services.jellyfin` | `watch.nanulab.de` | ⬜ | **the ONLY player** — movies/TV/music/audiobooks/books. SNB iGPU: `intel-vaapi-driver`; prod: `intel-media-driver` |
+| ~~Navidrome~~ | ~~`services.navidrome`~~ | — | 🗑 dropped | replaced by Jellyfin (2026-08-08) |
+| ~~Audiobookshelf~~ | ~~`services.audiobookshelf`~~ | — | 🗑 dropped | podcasts dropped; audiobooks → Jellyfin library (manual) |
+| ~~Booklore~~ | ~~OCI container~~ | — | 🗑 dropped | e-books served by Jellyfin book library (2026-08-08) |
+| Seerr | `services.seerr` | `requests.nanulab.de` | ⬜ | requests for movies/shows (merged Plex/Jellyfin/Emby project) |
+| Sonarr/Radarr/Lidarr | `services.<name>` | `*.nanulab.de` | ⬜ | TV/movies/music managers; Readarr (books) pinned + rreading-glasses mirror |
+| ~~Prowlarr~~ | `services.prowlarr` | — | ⬜ | indexer manager (one for all arrs) |
+| ~~Bazarr~~ | — | — | 🗑 dropped | no subtitle layer (2026-08-08) |
 | qBittorrent | `services.qbittorrent` | via VPN bridge IP | ⬜ | confined; listen port = AirVPN forwarded port |
 | SABnzbd | `services.sabnzbd` | via VPN bridge IP | ⬜ | confined |
-| slskd | `services.slskd` | via VPN bridge IP | ⬜ | confined; creds via `environmentFile`=sops; + soularr timer |
-| beets | `pkgs.beets` (systemd service) | — | ⬜ | CLI + YAML config; music tag post-processor |
-| soularr | systemd timer (Python) | — | ⬜ | bridges Lidarr ↔ slskd for missing album searches |
+| slskd | `services.slskd` | via VPN bridge IP | ~ optional | confined; music downloader (only if kept — 2026-08-08 discussion) |
+| ~~beets~~ | — | — | 🗑 dropped | no tag post-processor (arrs manage, Jellyfin reads tags) |
+| ~~soularr~~ | — | — | 🗑 dropped | Lidarr↔slskd bridge dropped with beets/slskd |
 | Home Assistant | `services.home-assistant` | `home.nanulab.de` | ⬜ | `trusted_proxies` for nginx |
 | Beszel | `services.beszel.hub` + `.agent` | `status.nanulab.de` | ⬜ | agent monitors systemd units; mail-queue alert |
 | Restic | `services.restic.backups.b2` | — | ⬜ | §11 |

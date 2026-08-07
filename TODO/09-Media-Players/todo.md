@@ -1,36 +1,34 @@
-# TODO — 09 Media Players
+# TODO — 09 Media Player (Jellyfin)
 
-**Status:** ⬜ not started (build step 6-7) · **Owner:** nixos-builder · **Modules:** `modules/services/media.nix` (+ booklore)
+**Status:** ⬜ not started · **Owner:** nixos-builder · **Module:** `modules/services/jellyfin.nix`
 
-> Player tier of the pipeline. All VPN-only vhosts on `*.nanulab.de`.
+> **Jellyfin is the ONLY player** (LOCKED 2026-08-08). Client = LiquidFin (Apple, personal v1 choice; v2 server is client-agnostic). Navidrome/Audiobookshelf/Booklore all dropped.
 
-## Jellyfin (`services.jellyfin`)
-- [ ] `watch.nanulab.de`
-- [ ] Libraries: `/slow/shared-media/video/{shows,movies}`
-- [ ] GPU: SNB iGPU → `intel-vaapi-driver`; prod → `intel-media-driver`
-- [ ] Admin account (1% manual)
+## Jellyfin (`services.jellyfin`) — `watch.nanulab.de`
+- [ ] Libraries (all point into `/slow/shared-media`):
+  - [ ] Movies: `/slow/shared-media/video/movies`
+  - [ ] TV Shows: `/slow/shared-media/video/shows`
+  - [ ] Music: `/slow/shared-media/audio/music`
+  - [ ] Audiobooks: `/slow/shared-media/audio/audiobooks`
+  - [ ] Books (e-books only — EPUB/PDF): `/slow/shared-media/literature/books`
 - [ ] Reads *arr NFO/poster files natively
+- [ ] GPU: SNB iGPU → `intel-vaapi-driver`; prod → `intel-media-driver`
+- [ ] nginx user-tier vhost + ACL
+- [ ] Admin account + library setup (1% manual)
+- [ ] `media` group (already defined; Jellyfin joins it)
 
-## Navidrome (`services.navidrome`)
-- [ ] `music.nanulab.de`
-- [ ] `settings.MusicFolder = /slow/shared-media/audio/music`
-- [ ] Admin account (1% manual)
+## Client
+- [ ] **LiquidFin** (App Store, free tier) — the Apple client. Document connection in README / profile page. (v1 personal choice; v2 documents alternatives: Swiftfin, Infuse, web.)
 
-## Audiobookshelf (`services.audiobookshelf`)
-- [ ] `listen.nanulab.de` — podcasts + audiobooks (manager AND player)
-- [ ] Library root `/slow/shared-media/audio/{audiobooks,podcasts}`
-- [ ] ABS built-in metadata
+## Dropped (2026-08-08)
+- 🗑 Navidrome — Jellyfin does music
+- 🗑 Audiobookshelf — podcasts dropped; audiobooks manual → Jellyfin library
+- 🗑 Booklore + MariaDB — e-books served by Jellyfin book library (iPad/iPhone/Mac read them; Apple TV excludes e-books)
 
-## Booklore — **the single sanctioned container** (ruling R2)
-- [ ] OCI container `ghcr.io/booklore-app/booklore:<pinned-tag>` (never :latest)
-- [ ] `services.mysql.package = pkgs.mariadb` (native MariaDB, container connects to host)
-- [ ] `booklore_db_password` from sops
-- [ ] `books.nanulab.de`
-- [ ] Library root `/slow/shared-media/literature/{books,comics,manga}`
-- [ ] MariaDB nightly dump → B2 (add to §11 list)
-- [ ] Kavita **deleted** (replaced by Booklore)
+## Audiobooks (manual path)
+- [ ] Document the manual flow: drop audiobook folders into `/slow/shared-media/audio/audiobooks` → Jellyfin scan → LiquidFin plays
+- [ ] Optional: an audiobook renamer/organizer later if it matters (Shelfarr watch — not packaged)
 
 ## Shared
-- [ ] nginx user-tier vhosts
-- [ ] `media` group
+- [ ] nginx user-tier vhost
 - [ ] Restic include state

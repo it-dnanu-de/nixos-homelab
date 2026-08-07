@@ -21,8 +21,8 @@
 | 05 | [Identity & Access](05-Identity-Access/todo.md) | ✅ done | Authelia, WG peers, profiles |
 | 06 | [Cloud Services](06-Cloud-Services/todo.md) | ✅ done | Nextcloud(+Office), Collabora, Immich, Vaultwarden |
 | 07 | [Downloads & VPN](07-Downloads/todo.md) | ⬜ next | qBit, SAB, slskd, VPN-Confinement netns |
-| 08 | [Arr Stack](08-Arr-Stack/todo.md) | ⬜ | Sonarr/Radarr/Lidarr/Readarr/Prowlarr/Bazarr, Seerr, soularr, beets |
-| 09 | [Media Players](09-Media-Players/todo.md) | ⬜ | Jellyfin, Navidrome, ABS, Booklore |
+| 08 | [Arr Stack](08-Arr-Stack/todo.md) | ⬜ | Radarr/Sonarr/Lidarr/Readarr + Prowlarr + Seerr (stack LOCKED) |
+| 09 | [Media Player](09-Media-Players/todo.md) | ⬜ | Jellyfin (ONLY player) + LiquidFin client |
 | 10 | [Smart Home](10-Smart-Home/todo.md) | ⬜ | Home Assistant (in v1) |
 | 11 | [Monitoring & Backups](11-Monitoring-Backups/todo.md) | ⬜ | Beszel, Restic→B2, postgres dumps |
 | 12 | [Websites](12-Websites/todo.md) | ⬜ | Hugo (v1 only — NOT in v2) |
