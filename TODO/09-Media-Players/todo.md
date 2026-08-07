@@ -2,7 +2,7 @@
 
 **Status:** ⬜ not started · **Owner:** nixos-builder · **Module:** `modules/services/jellyfin.nix`
 
-> **Jellyfin is the ONLY player** (LOCKED 2026-08-08). Client = LiquidFin (Apple, personal v1 choice; v2 server is client-agnostic). Navidrome/Audiobookshelf/Booklore all dropped.
+> **Jellyfin is the ONLY player, native NixOS module** (LOCKED 2026-08-08). Client = LiquidFin (user choice). Prowlarr (index manager) is also native. Managers + requests are containers (TODO 08).
 
 ## Jellyfin (`services.jellyfin`) — `watch.nanulab.de`
 - [ ] Libraries (all point into `/slow/shared-media`):

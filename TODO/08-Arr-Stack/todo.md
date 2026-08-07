@@ -1,41 +1,39 @@
-# TODO — 08 Arr Stack
+# TODO — 08 Arr Stack (media managers + requests — Docker containers)
 
-**Status:** ⬜ not started · **Owner:** nixos-builder · **Modules:** `modules/services/arr-stack.nix`
+**Status:** ⬜ not started · **Owner:** nixos-builder + architect · **Modules:** `modules/services/containers.nix` (oci-containers) or per-service modules
 
-> Media automation: request → *arr → indexer → downloader → *arr manages → Jellyfin → LiquidFin.
-> Stack LOCKED 2026-08-08 (see OpenCode.md Project Vision). All native `services.<name>` modules in pinned 26.05.
+> Media automation: request → manager → Prowlarr → downloader → manager organizes → Jellyfin → LiquidFin.
+> Stack LOCKED 2026-08-08 (see OpenCode.md Project Vision). **Managers + request services run as Docker containers** (`virtualisation.oci-containers`, backend `docker`), per human ruling. Jellyfin + Prowlarr are native modules.
 
-## Media stack (LOCKED — one player, few services)
-| Media | Request | Manager | Indexer | Downloader | Player | Client |
-|---|---|---|---|---|---|---|
-| Movies | Seerr | **Radarr** | Prowlarr | qBit/SAB | Jellyfin | LiquidFin |
-| TV Shows | Seerr | **Sonarr** | Prowlarr | qBit/SAB | Jellyfin | LiquidFin |
-| Music | undecided* | **Lidarr** | Prowlarr | qBit/SAB | Jellyfin | LiquidFin |
-| Books | undecided* | **Readarr** | Prowlarr | qBit/SAB | Jellyfin | LiquidFin |
-| Audiobooks | — (manual) | — (manual) | — | manual | Jellyfin | LiquidFin |
-| Podcasts | **dropped** | — | — | — | — | — |
+## Containers to define (oci-containers, docker backend)
+- [ ] **Radarr** — movies manager (image: lscr.io/linuxserver/radarr)
+- [ ] **Sonarr** — TV manager (lscr.io/linuxserver/sonarr)
+- [ ] **Lidarr** — music manager (lscr.io/linuxserver/lidarr)
+- [ ] **Readarr** — books arr, pinned + rreading-glasses mirror (lscr.io/linuxserver/readarr)
+- [ ] **Livrarr** — books/audiobooks manager (kkodecs/livrarr — NOT packaged, custom container def)
+- [ ] **Seerr** — movies/TV requests (native 26.05 module exists BUT container per ruling)
+- [ ] **Mixarr** — music requests (aquantumofdonuts/mixarr — NOT packaged)
+- [ ] **Shelfarr** — books/audiobooks requests (Pedro-Revez-Silva/shelfarr — NOT packaged)
 
-\* Mixarr (150★), Livrarr (20★), Shelfarr (276★) are real but **NOT in nixpkgs** — declarability decision deferred.
+## Container definition pattern
+- [ ] `virtualisation.oci-containers.backend = "docker"`
+- [ ] Each container: pinned image digest (never `:latest`), loopback-only ports, volumes to `/slow/*`, TZ env
+- [ ] nginx vhost per service (`*.nanulab.de`, user-tier ACL) proxying to loopback ports
+- [ ] sops secrets via `environmentFiles` (or compose2nix sops integration if we go compose route)
+- [ ] Optional: `compose2nix` (packaged 26.05) to generate config from a docker-compose.yml
 
-## Managers (native modules)
-- [ ] **Sonarr** — TV: NFO + poster → Jellyfin
-- [ ] **Radarr** — Movies: NFO + poster → Jellyfin
-- [ ] **Lidarr** — Music: organizes → Jellyfin reads tags
-- [ ] **Readarr** ⚠️ archived upstream — pin package, metadata API → `rreading-glasses` mirror; migration note in README
-- [ ] **Prowlarr** — indexer manager, shared across all arrs
-- [ ] Connect all arrs to qBittorrent/SABnzbd (1% manual)
-- [ ] Prowlarr indexers (1% manual)
+## Native (non-container)
+- [ ] **Prowlarr** — indexer manager (`services.prowlarr`, native 26.05)
+- [ ] Connect all containers to Prowlarr (1% manual)
+- [ ] Connect managers to qBittorrent/SABnzbd (1% manual)
 - [ ] Hardlink completion into `/slow/shared-media`
 
-## Requests
-- [ ] **Seerr** (`services.seerr`, pinned 26.05 ✅) — `requests.nanulab.de` (VPN-only)
-- [ ] Connect Seerr → Sonarr/Radarr (+ Jellyfin via LiquidFin's built-in Jellyseerr)
-- [ ] Music/books requests: undecided (Mixarr/Shelfarr not packaged) — defer to later decision
-
-## Dropped (2026-08-08)
-- 🗑 Bazarr (no subtitle layer) · beets (no tag post-processor) · soularr (no slskd bridge) · Kometa (no Plex)
-- slskd: optional music downloader — keep only if we want Lidarr→slskd for missing albums
+## Unpackaged container images (verify at build time)
+- [ ] Livrarr: build/pin from `kkodecs/livrarr` GitHub releases or a container image if published
+- [ ] Mixarr: `aquantumofdonuts/mixarr` — check for published container image
+- [ ] Shelfarr: `Pedro-Revez-Silva/shelfarr` — check for published container image
+- ⚠️ If any has no official image, we build a small container or run as a systemd service instead — flag in plan
 
 ## Shared
-- [ ] nginx vhosts: `*.nanulab.de` per service (user-tier ACL)
-- [ ] Restic include of app state
+- [ ] Restic include of container state (bind-mounted dirs are on /slow or /fast already)
+- [ ] `media` group for shared dirs

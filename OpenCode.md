@@ -24,29 +24,29 @@
 `request service → *arr → indexer → downloader → *arr manages → player → client app`
 
 **Media stack — ✅ LOCKED (2026-08-08):**
-| Role | Choice |
-|---|---|
-| Client | **LiquidFin** (Apple: iPhone/iPad/Mac/Apple TV/Watch; movies/TV/music/audiobooks/books; offline downloads; Jellyseerr built-in) |
-| Player | **Jellyfin** (the ONLY player — movies, TV, music, audiobooks, books) |
-| Movies manager | **Radarr** |
-| TV manager | **Sonarr** |
-| Music manager | **Lidarr** |
-| Books manager | **Readarr** (pinned + rreading-glasses mirror) |
-| Indexer manager | **Prowlarr** |
-| Downloaders | **qBittorrent + SABnzbd** (+ optional slskd for music), all VPN-confined |
-| Requests | **Seerr** (native 26.05 module; merged project covering Plex/Jellyfin/Emby) for movies+TV |
-| Audiobooks | **manual** (no good arr exists; drop files into Jellyfin audiobook library) |
-| Podcasts | **dropped** |
-| Comics/manga | **dropped** (e-books only) |
-| Music requests / book+audiobook managers | **undecided** — Mixarr (150★), Livrarr (20★), Shelfarr (276★) are real but NOT in nixpkgs; decision deferred, see TODO 08 |
-| beets / Bazarr / soularr / slskd | **dropped** (no separate metadata/tagging layer; the arrs manage + Jellyfin reads tags) |
+| Role | Service | Runtime |
+|---|---|---|
+| Client | **LiquidFin** (Apple; user choice; v1 personal pick, v2 client-agnostic) | external app |
+| Player | **Jellyfin** (the ONLY player — movies/TV/music/audiobooks/books) | **native NixOS module** |
+| Index manager | **Prowlarr** | **native NixOS module** |
+| Movies manager | **Radarr** | Docker container |
+| TV manager | **Sonarr** | Docker container |
+| Music manager | **Lidarr** | Docker container |
+| Books/audiobooks manager | **Livrarr** | Docker container |
+| Books arr | **Readarr** (pinned + rreading-glasses mirror) | Docker container |
+| Requests (movies/TV) | **Seerr** | Docker container |
+| Requests (music) | **Mixarr** | Docker container |
+| Requests (books/audiobooks) | **Shelfarr** | Docker container |
+| Downloaders | **qBittorrent + SABnzbd** (VPN-Confinement netns) | native |
+| Audiobooks | manual (no arr; drop into Jellyfin audiobook library) | — |
+| Podcasts / comics / manga | **dropped** | — |
 
-Rules: **one player (Jellyfin), one client (LiquidFin, personal v1 choice; v2 server stays client-agnostic)**. "Fewer services is better." The arrs are the file managers — no separate organizer. Podcasts and comics/manga are out of scope.
+**Container rule (2026-08-08):** media managers + request services run as **Docker containers** via `virtualisation.oci-containers.containers.<name>` (backend `docker`), even though most have native modules — uniform runtime per human ruling. Jellyfin + Prowlarr stay native. Optionally generate from `docker-compose.yml` via `compose2nix` (packaged in 26.05, sops integration built in). Each container = a managed systemd unit; bind loopback-only ports, nginx proxies with ACLs.
 
-**v1 in-scope (all media types):** movies + TV (Seerr → Radarr/Sonarr → Prowlarr → qBittorrent/SABnzbd → Jellyfin → LiquidFin), music (Lidarr → Prowlarr → downloaders → Jellyfin → LiquidFin), audiobooks (manual → Jellyfin → LiquidFin), books (Readarr → Prowlarr → downloaders → Jellyfin → LiquidFin). Plus Home Assistant, Beszel, restic→B2, Hugo (v1 only), and the `.mobileconfig` generator.
+**v1 in-scope (all media types):** movies + TV (Seerr → Radarr/Sonarr → Prowlarr → qBittorrent/SABnzbd → Jellyfin → LiquidFin), music (Mixarr → Lidarr → Prowlarr → downloaders → Jellyfin → LiquidFin), audiobooks (manual → Jellyfin → LiquidFin), books (Shelfarr → Livrarr/Readarr → Prowlarr → downloaders → Jellyfin → LiquidFin). Plus Home Assistant, Beszel, restic→B2, Hugo (v1 only), and the `.mobileconfig` generator.
 
 **Core rules:**
-- **Native modules preferred; containers allowed when justified** (media apps, Booklore). "Zero containers" was a phase-1 simplification; it is retired.
+- **Native modules preferred for infra; containers used where decided.** Media managers + request services run as **Docker containers** (`virtualisation.oci-containers`, backend docker) per the locked media stack. Jellyfin + Prowlarr native. "Zero containers" was a phase-1 simplification; it is retired.
 - Downloader VPN isolation via **VPN-Confinement network namespaces** (AirVPN).
 - **Prod switch = change only `disko.nix` + `hardware-configuration.nix` + `zfsArcMax` in settings.nix.** Everything else identical. The Dell is reformatted early in v1 to mirror `/fast` + `/slow` so this contract holds.
 - **Accounts are declarative** — created via occ/CLI oneshots on first install (idempotent), not web UI.
@@ -58,7 +58,7 @@ Rules: **one player (Jellyfin), one client (LiquidFin, personal v1 choice; v2 se
 ## 1. Philosophy & Hard Rules
 
 1. **99% Declarative Rule.** NixOS declares infrastructure: ZFS, networking, services, users, paths, secrets, TLS. The human configures application *state* once via web UIs (admin accounts, indexers, libraries). No bootstrap scripts poking APIs — they rot.
-2. **Native NixOS modules preferred; containers allowed when justified.** Phase-1 "zero containers" is retired. Media apps and exceptions (e.g. Booklore) may run as containers/podman when a native module is missing or inadequate. VPN isolation always uses `VPN-Confinement` namespaces, not containers.
+2. **Native NixOS modules preferred for infra; Docker containers where decided.** Media managers + request services run as Docker containers (`virtualisation.oci-containers`, backend docker) per the locked media stack; Jellyfin + Prowlarr stay native. VPN isolation always uses `VPN-Confinement` namespaces, not containers.
 3. **Zero open ports** except TCP 25 (inbound SMTP) + UDP 51820 (WireGuard), both forwarded to `10.0.0.2`. Everything else rides the WireGuard VPN, the Cloudflare tunnel, or a confined netns.
 4. **Stable channel, pinned flake.** `nixpkgs` follows `nixos-26.05`. No auto-upgrades. Human runs `nix flake update` deliberately, 2–4×/year.
 5. **Single-node monolith.** No clustering.
