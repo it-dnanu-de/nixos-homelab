@@ -1,6 +1,6 @@
 # TODO — 10 Smart Home (Home Assistant)
 
-**Status:** ⬜ not started (v1) · **Owner:** nixos-builder · **Module:** `modules/services/smart-home.nix`
+**Status:** ⬜ not started (v1) · **Owner:** builder · **Module:** `modules/services/smart-home.nix`
 
 > **Half-declared (2026-08-08):** the 10 users (admin + 9 regular) are declared in Nix; everything else (integrations, devices, automations) is configured once via the HA web UI (persists in its config dir — same model as the arrs).
 

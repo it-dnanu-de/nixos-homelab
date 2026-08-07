@@ -356,25 +356,25 @@ nixos-homelab/
 **On the human's machine (once):** generate age keypair (private → USB + password manager); generate mobile CA; clone repo; edit `settings.nix`; `sops secrets/secrets.yaml` to fill §7; commit via PR.
 **Install:** boot NixOS ISO on Dell (ethernet) → start sshd, set password → `nix run github:nix-community/nixos-anywhere -- --flake .#homelab --extra-files <dir-with-age-key> root@<ip>` → disko formats, installs, reboots.
 **Day-2 flow:** PR merges to `main` → server: `cd /etc/nixos && git pull origin main && nixos-rebuild switch --flake .#homelab`. Rollback = `nixos-rebuild switch --rollback` or boot menu.
-**1% manual (~45 min):** disable Speedport DHCPv4 (+DHCPv6 if UI allows); switch dumitru iPhone off manual `10.0.0.3` → DHCP (Kea reservation hands it `10.0.0.10`); verify UDP 51820 forward (done 2026-08-05); keep Speedport DHCP pointing at AdGuard + IPv6 enabled; **Speedport v6 pass-through** (fixes internet.nl IPv6 — §3.5); fill iza/kerem/hannah MACs in `users.nix`; re-scan ALL WG QRs post-deploy; distribute Authelia passwords; optional `rm /var/lib/AdGuardHome/leases.json`; revoke Tailscale OAuth client + remove machines; Nextcloud admin + link Mail app to local IMAP; Jellyfin admin + libraries; Prowlarr indexers; connect managers to downloaders; Seerr↔Jellyfin; Vaultwarden admin; HA onboarding; Beszel agent key; **mail-tester.com + internet.nl after mail deploy (done 2026-08-07 — see §4.1); flip DMARC to `p=reject` after 30 clean days; publish DS records at registrar (both zones, §3.7, activates DANE).**
+**1% manual (~45 min):** disable Speedport DHCPv4 (+DHCPv6 if UI allows); switch dumitru iPhone off manual `10.0.0.3` → DHCP (Kea reservation hands it `10.0.0.10`); verify UDP 51820 forward (done 2026-08-05); keep Speedport DHCP pointing at AdGuard + IPv6 enabled; **Speedport v6 pass-through** (fixes internet.nl IPv6 — §3.5); fill iza/kerem/hannah MACs in `users.nix`; re-scan ALL WG QRs post-deploy; distribute Authelia + mail passwords; optional `rm /var/lib/AdGuardHome/leases.json`; Nextcloud admin + link Mail app to local IMAP; Jellyfin admin + libraries; Prowlarr indexers; connect managers to downloaders; Seerr↔Jellyfin; Vaultwarden admin; HA onboarding; Beszel agent key; **mail-tester.com + internet.nl after mail deploy (done 2026-08-07 — see §4.1); flip DMARC to `p=reject` after 30 clean days; publish DS records at registrar (both zones, §3.7, activates DANE).**
 
 ## 13. Verification Suite (run after install / deploy)
 
-`zpool status` · `wg show` (handshakes < 2 min old for active peers, peers at 10.0.10.x, 97 peers listed) · `systemctl status kea-dhcp4-server kea-dhcp6-server` · Kea leases: arch=`10.0.0.3`, dumitru iPhone=`10.0.0.10`, Xbox=`10.0.0.41`, Samsung TV=`10.0.0.21` · `dig @10.0.0.2 mail.dnanu.de` (→10.0.0.2) · `dig mail.dnanu.de @1.1.1.1` (→home IP) · `dig vpn.dnanu.de @1.1.1.1` (→home IP) · `dig @fd10::2 cloud.nanulab.de` → 10.0.0.2 · cellular with tunnel up: `dig cloud.nanulab.de` → 10.0.0.2 and `curl -I https://cloud.nanulab.de` works · `curl -kI https://profile.dnanu.de/admin/` (admin sees 7 QRs) · nginx ACL: guest IP → 403 on all vhosts · `curl -k https://profile.nanulab.de` → **404** (catch-all) · AdGuard query log shows 10.0.10.x sources labeled · `swaks --to hey@dnanu.de --server <home-ip>` from outside · send via iOS → check Resend dashboard · LAN: fresh guest lease ∈ .100-.200 · torrent IP-leak test in qBittorrent · `restic check` · lid-close test · `systemctl --failed` empty · `dig +dnssec +adflag dnanu.de @9.9.9.9` (AD bit set) · `delv dnanu.de`.
+`zpool status` · `wg show` (handshakes < 2 min old for active peers, peers at 10.0.10.x, 97 peers listed, **P2P routes work**) · `systemctl status kea-dhcp4-server kea-dhcp6-server` · Kea leases: arch=`10.0.0.3`, dumitru iPhone=`10.0.0.10`, Xbox=`10.0.0.41`, Samsung TV=`10.0.0.21` · `dig @10.0.0.2 mail.dnanu.de` (→10.0.0.2) · `dig mail.dnanu.de @1.1.1.1` (→home IP) · `dig vpn.dnanu.de @1.1.1.1` (→home IP) · `dig @fd10::2 cloud.nanulab.de` → 10.0.0.2 · cellular with tunnel up: `dig cloud.nanulab.de` → 10.0.0.2 and `curl -kI https://cloud.nanulab.de` works · `curl -kI https://profile.dnanu.de/admin/` (admin sees 7 QRs) · nginx ACL: guest IP → 403 on all vhosts · `curl -k https://profile.nanulab.de` → **404** (catch-all) · AdGuard query log shows 10.0.10.x sources labeled · `swaks --to hey@dnanu.de --server <home-ip>` from outside · send via iOS → confirm delivery · LAN: fresh guest lease ∈ .100-.200 · torrent IP-leak test in qBittorrent · `restic check` · lid-close test · `systemctl --failed` empty · `dig +dnssec +adflag dnanu.de @9.9.9.9` (AD bit set) · `delv dnanu.de`.
 
 ## 14. Update Policy
 
 Quarterly: `nix flake update` → build → test → switch. Rollback via boot menu / `flake.lock` git history. No unattended upgrades.
 
-## 15. Phase 2 Backlog (documented, NOT built)
+## 15. v2 Backlog (documented, NOT built — the fork for everyone)
 
-- Nextcloud Talk (needs TURN + open ports → **Phase 2 forever**)
+- Nextcloud Talk (needs TURN + open ports → **never**)
 - MeTube / Pinchflat (YouTube downloader)
 - IPTV
-- Headscale + headplane UI (both native, verified 26.05 — if declarative WG peer management ever becomes a burden; needs TCP 8443 forward, preauth keys or OIDC IdP, iOS via Tailscale app's alternate-server setting)
-- Multi-user mailboxes
+- Headscale + headplane UI (both native, verified 26.05 — if declarative WG peer management ever becomes a burden; needs TCP 8443 forward, preauth keys or an OIDC IdP)
 - **Nextcloud Office powered by Euro-Office** (June 2026, ONLYOFFICE-based; not in nixpkgs — keep Collabora until it lands in a pinned channel; decision 2026-08-08)
-- **Installer project** (`install.sh` on live ISO): fork repo → create GitHub repo on user's account → interactive Q&A (users/accounts/emails/aliases/apps/disks/API tokens) → generate config + sops → print manual steps. Assumes same stack (Resend/CF/INWX/WG/SNM). Build after v1. *(Note: Nextcloud/Vaultwarden accounts persist in their DBs across reboot AND rebuild — installer only creates on first install.)*
+- **Installer project** (`install.sh` on live ISO): fork repo → create GitHub repo on user's account → interactive Q&A (users/accounts/emails/aliases/apps/disks/API tokens) → generate config + sops → print manual steps. Assumes same stack (Resend/CF/INWX/WG/SNM). **v2 feature** (build after v1 done + fork). *(Note: Nextcloud/Vaultwarden accounts persist in their DBs across reboot AND rebuild — installer only creates on first install.)*
+- **Website/blog NOT in v2** — v2 documents how to add your own blog. Hugo site itself is a v2 item.
 - DANE TLSA active once DS published at DENIC (§3.7)
 
 ## 16. Key References
@@ -390,4 +390,4 @@ Quarterly: `nix flake update` → build → test → switch. Rollback via boot m
 - WireGuard: https://www.wireguard.com · headscale: https://github.com/juanfont/headscale · headplane: https://github.com/tale/headplane
 - Mail hardening RFCs: RFC 8460 (TLS-RPT), RFC 8461 (MTA-STS), RFC 6698 (DANE TLSA), RFC 7489 (DMARC), RFC 7208 (SPF), RFC 6376 (DKIM)
 - Rspamd: https://rspamd.com · SNM rspamd integration: https://nixos-mailserver.readthedocs.io/en/latest/
-- Resend API (watchdog): https://resend.com/docs/api-reference/emails/send-email
+- Resend API: https://resend.com/docs/api-reference/emails/send-email (transactional emails from Vaultwarden/Nextcloud; alerts are dashboard-only)

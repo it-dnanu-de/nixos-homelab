@@ -1,6 +1,6 @@
 # TODO — 08 Arr Stack (media managers + requests — Docker containers)
 
-**Status:** ⬜ not started · **Owner:** nixos-builder + architect · **Modules:** `modules/services/containers.nix` (oci-containers) or per-service modules
+**Status:** ⬜ not started · **Owner:** builder + architect · **Modules:** `modules/services/containers.nix` (oci-containers) or per-service modules
 
 > Media automation: request → manager → Prowlarr → downloader → manager organizes → Jellyfin → LiquidFin.
 > Stack LOCKED 2026-08-08 (see OpenCode.md Project Vision). **Managers + request services run as Docker containers** (`virtualisation.oci-containers`, backend `docker`), per human ruling. Jellyfin + Prowlarr are native modules.

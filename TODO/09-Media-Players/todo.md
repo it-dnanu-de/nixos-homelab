@@ -1,6 +1,6 @@
 # TODO — 09 Media Player (Jellyfin)
 
-**Status:** ⬜ not started · **Owner:** nixos-builder · **Module:** `modules/services/jellyfin.nix`
+**Status:** ⬜ not started · **Owner:** builder · **Module:** `modules/services/jellyfin.nix`
 
 > **Jellyfin is the ONLY player, native NixOS module** (LOCKED 2026-08-08). Client = LiquidFin (user choice). Prowlarr (index manager) is also native. Managers + requests are containers (TODO 08).
 

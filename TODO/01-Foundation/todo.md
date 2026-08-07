@@ -1,6 +1,6 @@
 # TODO — 01 Foundation (flake, settings, users, secrets)
 
-**Status:** ✅ done and deployed (gen 72) · **Owner:** nixos-builder · **File refs:** `flake.nix`, `settings.nix`, `users.nix`, `modules/system/sops.nix`, `secrets/secrets.yaml`, `.sops.yaml`, `scripts/gen-wg-keys.sh`, `wireguard-pubkeys.nix`
+**Status:** ✅ done and deployed (gen 72) · **Owner:** builder · **File refs:** `flake.nix`, `settings.nix`, `users.nix`, `modules/system/sops.nix`, `secrets/secrets.yaml`, `.sops.yaml`, `scripts/gen-wg-keys.sh`, `wireguard-pubkeys.nix`
 
 ## Flake
 - [x] `flake.nix` pins nixpkgs `nixos-26.05` + sops-nix + disko + vpn-confinement + simple-nixos-mailserver

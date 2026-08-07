@@ -1,6 +1,6 @@
 # TODO — 06 Cloud Services
 
-**Status:** ✅ done (deployed gen 78, declarative fixes gen 81) · **Owner:** nixos-builder · **Modules:** `modules/services/{nextcloud,collabora,immich,vaultwarden}.nix`, `nginx-helpers.nix`
+**Status:** ✅ done (deployed gen 78, declarative fixes gen 81) · **Owner:** builder · **Modules:** `modules/services/{nextcloud,collabora,immich,vaultwarden}.nix`, `nginx-helpers.nix`
 
 > Build step 5 in OpenCode.md §12. All options/packages verified in pinned 26.05. RAM-heavy four on the Dell: Immich, Nextcloud+Collabora, Jellyfin.
 

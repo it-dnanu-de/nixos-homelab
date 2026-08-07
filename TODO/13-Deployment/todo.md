@@ -21,9 +21,9 @@
 - [ ] Verify UDP 51820 forward (done 2026-08-05 ✅)
 - [ ] Fill iza/kerem/hannah MACs
 - [ ] Re-scan ALL WG QRs post-deploy
-- [ ] Distribute Authelia passwords (10 users)
+- [ ] Distribute Authelia + mail passwords (10 users + 9 family mailboxes)
 - [ ] Optional: `rm /var/lib/AdGuardHome/leases.json`
-- [ ] Revoke Tailscale OAuth + remove machines (Tailscale console)
+- [x] Tailscale fully removed (OAuth revoked + machines gone) — done 2026-08-05/06
 - [ ] Nextcloud admin + Mail app → local IMAP
 - [ ] Jellyfin admin + libraries
 - [ ] Prowlarr indexers; connect *arrs to downloaders

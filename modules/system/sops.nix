@@ -15,6 +15,16 @@
       resend_api_key = {};
       mail_hey = {};
       mail_admin = {};
+      # 9 family mailboxes (users.nix is the single source of truth)
+      mail_dumitru = {};
+      mail_adela = {};
+      mail_tiberiu = {};
+      mail_david = {};
+      mail_ramona = {};
+      mail_tibisor = {};
+      mail_iza = {};
+      mail_kerem = {};
+      mail_hannah = {};
       airvpn_wg_conf = {};
       b2_account_id = {};
       b2_account_key = {};

@@ -1,6 +1,6 @@
 # TODO — 11 Monitoring & Backups
 
-**Status:** ⬜ not started (build step 8) · **Owner:** nixos-builder · **Modules:** `modules/services/monitoring.nix`, `modules/system/backups.nix`
+**Status:** ⬜ not started (build step 8) · **Owner:** builder · **Modules:** `modules/services/monitoring.nix`, `modules/system/backups.nix`
 
 > **No alert emails (2026-08-08):** the Glance dashboard surfaces status. `mail-queue-watch` writes a status file Glance reads. Beszel monitors everything.
 
