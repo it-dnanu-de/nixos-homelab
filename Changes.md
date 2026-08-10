@@ -111,3 +111,10 @@ Pulled Artificial-Analysis (intelligence/coding/agentic) + Design-Arena (ELO) vi
 - JOAT = qwen3.7-flash (cheapest, 1M ctx)
 - NEW designer agent = muse-spark-1.2 (top-3 in all design categories)
 Dropped: GLM 5.2 (troubleshooter), Nemotron (weak per benchmark).
+
+## 2026-08-08 — Memory layer design + multimodal confirmation
+
+- Memory: pgvector RAG on the ARCH dev machine (local Postgres + pgvector, Ollama + nomic-embed-text, memory MCP server — AtomicMemory candidate). Set up now, activated when the human starts building.
+- Ingest surface: OpenCode.md, README, AGENTS, Changes.md, Memory.md, TODO/, git history. Retrieve-on-demand to minimize context.
+- Multimodal confirmed via OpenRouter MCP list-models: Opus5/K3/Terra/Qwen3.8/Qwen3.7/Muse accept image input; verifier+deployer text-only; Muse Spark most capable. OpenRouter has ZERO embedding models (verified) -> local Ollama required for RAG.
+- OpenRouter MCP tools discovered: list-models, get-model, list-benchmarks, generate-image, transcribe-audio, generate-speech, get-credits, send-message.
