@@ -1,5 +1,21 @@
 # Changes.md — temporary session log (wiped into OpenCode.md at end of session)
 
+## 2026-08-08 — Full .md sweep for the container architecture
+
+Brought every markdown file in line with the 2026-08-08 container/zone ruling:
+- **docs/network-addressing.md** — rewritten to v5 (/16 zones, users LAN .70, users VPN .80, IoT .60, guests .90)
+- **AGENTS.md** — rule 3: Docker → NixOS containers
+- **deployment skill** — 10.0.0.2/16, container zones, updated 1% manual
+- **nixos-flake skill** — native-only → all-containers; build order updated
+- **sops-secrets skill** — booklore removed, mail_<user> added
+- **TODO 03** — /16 base, zone isolation, WG v5 renumber
+- **TODO 08/09** — Docker → NixOS containers (zones .40/.50)
+- **TODO 01/14** — subnet refs updated
+- **OpenCode.md** — P2P AllowedIPs → 10.0.0.0/16
+
+---
+(previous session history preserved below)
+
 ## 2026-08-08 — Architecture ruling: all services as NixOS containers + /16 zone scheme
 
 ### Major architecture change (human-driven, reverses native-modules-on-host)

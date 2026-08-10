@@ -1,34 +1,28 @@
-# TODO — 09 Media Player (Jellyfin)
+# TODO — 09 Media Player (Jellyfin — frontend-media container)
 
-**Status:** ⬜ not started · **Owner:** builder · **Module:** `modules/services/jellyfin.nix`
+**Status:** ⬜ not started · **Owner:** builder · **Module:** `modules/containers/jellyfin.nix`
 
-> **Jellyfin is the ONLY player, native NixOS module** (LOCKED 2026-08-08). Client = LiquidFin (user choice). Prowlarr (index manager) is also native. Managers + requests are containers (TODO 08).
+> **Jellyfin is the ONLY player** (LOCKED 2026-08-08). NixOS container in frontend-media zone `.50`, macvlan, served via nginx at `media.nanulab.de`. Client = LiquidFin (user choice).
 
-## Jellyfin (`services.jellyfin`) — `media.nanulab.de`
+## Jellyfin (`services.jellyfin` in its container) — `media.nanulab.de`
 - [ ] Libraries (all point into `/slow/shared-media`):
   - [ ] Movies: `/slow/shared-media/video/movies`
   - [ ] TV Shows: `/slow/shared-media/video/shows`
   - [ ] Music: `/slow/shared-media/audio/music`
   - [ ] Audiobooks: `/slow/shared-media/audio/audiobooks`
-  - [ ] Books (e-books only — EPUB/PDF): `/slow/shared-media/literature/books`
+  - [ ] Books (e-books — EPUB/PDF): `/slow/shared-media/literature/books`
 - [ ] Reads *arr NFO/poster files natively
 - [ ] GPU: SNB iGPU → `intel-vaapi-driver`; prod → `intel-media-driver`
-- [ ] nginx user-tier vhost + ACL
 - [ ] **10 users declared** (admin + 9 family, from users.nix — 2026-08-08) + library setup (1% manual)
-- [ ] `media` group (already defined; Jellyfin joins it)
+- [ ] `media` group on shared dirs
 
 ## Client
 - [ ] **LiquidFin** (App Store, free tier) — the Apple client. Document connection in README / profile page. (v1 personal choice; v2 documents alternatives: Swiftfin, Infuse, web.)
 
-## Dropped (2026-08-08)
-- 🗑 Navidrome — Jellyfin does music
-- 🗑 Audiobookshelf — podcasts dropped; audiobooks manual → Jellyfin library
-- 🗑 Booklore + MariaDB — e-books served by Jellyfin book library (iPad/iPhone/Mac read them; Apple TV excludes e-books)
-
 ## Audiobooks (manual path)
-- [ ] Document the manual flow: drop audiobook folders into `/slow/shared-media/audio/audiobooks` → Jellyfin scan → LiquidFin plays
-- [ ] Optional: an audiobook renamer/organizer later if it matters (Shelfarr watch — not packaged)
+- [ ] Drop audiobook folders into `/slow/shared-media/audio/audiobooks` → Jellyfin scan → LiquidFin plays
+- [ ] Optional: Shelfarr/Livrarr watch for audiobook management (not packaged)
 
 ## Shared
-- [ ] nginx user-tier vhost
+- [ ] nginx user-tier vhost (frontend-media zone)
 - [ ] Restic include state

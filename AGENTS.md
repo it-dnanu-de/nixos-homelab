@@ -47,7 +47,7 @@ feat/<topic> branch ──► work ──► PR ──► review ──► merge
 
 1. **OpenCode.md is the single source of truth.** Read the **Project Vision** section first — three repos (nixos=archived, nixos-homelab=v1 personal, v2=fork for everyone). Build exactly what it specifies, nothing more.
 2. **✅ LOCKED** = decided, don't revisit. **⚠️ VERIFY** = check against pinned `nixos-26.05` before use.
-3. **Native NixOS modules preferred for infra; Docker containers where decided** (media managers + request services via `virtualisation.oci-containers`, backend docker). VPN isolation always via VPN-Confinement netns.
+3. **All services are NixOS containers** (`containers.<name>`, systemd-nspawn) with tiered /16 zones (§3.1). Host = bare core. Default-deny zone isolation; nginx = single ingress; backends host-side. VPN isolation always via VPN-Confinement netns.
 4. **Zero open ports** except 25/tcp + 51820/udp (WireGuard). Everything else through VPN/tunnel/netns.
 5. **Secrets via sops-nix.** Memory.md is gitignored. The repo is public-safe.
 6. **SSH password auth stays enabled** — never disable it (human ruling).

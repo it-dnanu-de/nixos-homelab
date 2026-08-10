@@ -10,7 +10,7 @@
 - [x] All 5 tunnel hostnames public (200/302) — verified 2026-08-07
 - [x] nginx ACL: guest → 403; catch-all → 404
 - [x] Kea leases: arch 10.0.0.3, iPhone 10.0.0.10, Xbox 10.0.0.41, Samsung 10.0.0.21
-- [x] AdGuard query log labels 10.0.10.x sources
+- [x] AdGuard query log labels 10.0.80.x sources (users VPN)
 - [x] `wg show` handshakes
 - [x] DNSSEC: `dig +dnssec +adflag dnanu.de @9.9.9.9`, `delv`
 - [x] test snapshots in `tests/` (internet.nl, dnsviz, zonemaster, mail-tester, etc.)

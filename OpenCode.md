@@ -59,7 +59,7 @@
 
 **Media vhosts (2026-08-08):** user-facing: `media.nanulab.de`=Jellyfin, `tv.nanulab.de`=Seerr, `music.nanulab.de`=Mixarr, `books.nanulab.de`=Shelfarr. Backend *arrs/Prowlarr on `[service].nanulab.de` **admin-only**. All served by split-horizon DNS (no public records needed).
 
-**WireGuard P2P (2026-08-08):** server-routed peer-to-peer enabled — client `AllowedIPs` = `10.0.0.0/24` + `10.0.10.0/24`, wg0 forwarding on. Peers reach each other via the server. (AirDrop itself is Bluetooth/WiFi-direct, unaffected.)
+**WireGuard P2P (2026-08-08):** server-routed peer-to-peer enabled — client `AllowedIPs` = `10.0.0.0/16` (whole internal space), wg0 forwarding on. Peers reach each other + all zones via the host. (AirDrop itself is Bluetooth/WiFi-direct, unaffected.)
 
 **Core rules:**
 - **All services run as NixOS containers** (`containers.<name>`, systemd-nspawn) with per-tier network placement (2026-08-08 architecture ruling). The host is a bare core (ZFS, kernel WireGuard, container runtime). Docker/oci-containers model is **retired** in favor of native NixOS containers.

@@ -10,7 +10,7 @@ The homelab is a single-node NixOS monolith on the pinned stable channel.
 ## Hard rules (from OpenCode.md)
 - nixpkgs follows `nixos-26.05`. No auto-upgrades; the human runs `nix flake update` deliberately 2-4x/year.
 - **99% Declarative.** Declare infrastructure in Nix: ZFS, networking, services, users, paths, secrets, TLS. Application *state* is configured once by the human in web UIs. No bootstrap scripts poking APIs.
-- **Native modules only.** Zero containers in v1. The single sanctioned exception is Booklore (pinned OCI image + native MariaDB). VPN confinement uses namespaces, not containers.
+- **All services are NixOS containers** (`containers.<name>`, systemd-nspawn) in /16 zones (2026-08-08). Host = bare core. Default-deny zone isolation; nginx = single ingress; backends host-side. VPN confinement uses namespaces, not containers.
 - **Zero open ports** except 25/tcp (inbound SMTP) + 51820/udp (WireGuard). Everything else: WireGuard VPN, Cloudflare tunnel, or VPN netns.
 - Do not add services, containers, or dependencies not listed in OpenCode.md.
 
@@ -36,9 +36,9 @@ modules/{networking,services,system}/*.nix
 3. Networking: static IP, AdGuard, Kea, WireGuard, ddclient, cloudflared, nginx+ACME ✅
 4. Mail (SNM + Resend relay + sieve + DNS table) ✅
 5. Nextcloud (+Office) + Immich + Vaultwarden ✅
-6. VPN-Confinement -> downloaders -> *arrs -> players (incl. Booklore) ⬜
-7. .mobileconfig signer + Hugo site ⬜
-8. Restic + Beszel + verification suite ⬜
+6. Containerize all services (NixOS containers, /16 zones, WG v5) ⬜
+7. .mobileconfig signer ⬜
+8. Restic + Beszel + Glance + verification suite ⬜
 
 ## Agent routing (this harness)
 - Planning / architecture / hard debugging -> `architect` (Kimi K3)

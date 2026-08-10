@@ -3,28 +3,29 @@
 **Status:** ✅ done (deployed) · **Owner:** network modules · **File refs:** `modules/networking/*`
 
 ## Base (`base.nix`)
-- [x] Static IP `10.0.0.2/24`, gw `10.0.0.1`, ULA `fd10::2/64`
+- [x] Static IP `10.0.0.2/16`, gw `10.0.0.1`, ULA `fd10::2/64` (host = bare core)
 - [x] `net.ipv6.conf.all.forwarding = false` (SLAAC GUA works)
-- [x] Firewall: global = 25/tcp + 51820/udp only; 53/80/443/465/587/993 source-scoped LAN/ULA/link-local (iptables extraCommands)
-- [x] systemd-resolved
+- [ ] **Router LAN → /16** (1% manual, Speedport) so all container zones are reachable
+- [ ] **Zone isolation:** nftables default-deny between 10.0.x.x zones; explicit allows (frontends→backend, backends→DB, HA→IoT, nginx→all)
 - [x] logind lid-switch ignore (Dell UPS)
 
-## DNS — AdGuard (`adguard.nix`)
+## DNS — AdGuard (`adguard.nix`, system container .10)
 - [x] DNS-only (DHCP retired to Kea), `mutableSettings = false`
-- [x] Rewrites: `*.nanulab.de` → 10.0.0.2, `mail.dnanu.de` → 10.0.0.2
+- [x] Rewrites: `*.nanulab.de` → nginx (or per-service container IPs), `mail.dnanu.de` → mail container
 - [x] Binds 0.0.0.0 + `::`
 - [x] Persistent clients from users.nix (device labels)
 
-## DHCP — Kea (`kea.nix`)
-- [x] dhcp4: pool `.100-.200`, 10 host reservations (real MACs)
+## DHCP — Kea (`kea.nix`, system container .10)
+- [x] dhcp4: guest pool `.90.100-.200`, host reservations (real MACs)
 - [x] dhcp6: stateful ULA pool `fd10::100-200`, DNS `fd10::2`
 - [ ] iza/kerem/hannah reservations (MACs TODO in users.nix)
+- [ ] Users → 10.0.70.x reservations; TV/Air/Xbox → IoT (.60)
 
-## WireGuard (`wireguard.nix`)
-- [x] Server `10.0.10.2/24`, endpoint `vpn.dnanu.de:51820`
-- [x] **97 peers pre-provisioned** (7 admin + 90 user), split-tunnel, DNS 10.0.0.2
-- [ ] **Server-routed P2P (2026-08-08):** client AllowedIPs → `10.0.0.0/24 + 10.0.10.0/24`, wg0 forwarding on. Peers reach each other via server.
-- [ ] Re-scan ALL QRs on devices post-deploy (deployed gen is old v2 subnet)
+## WireGuard (`wireguard.nix` — host, users-VPN zone .80)
+- [x] Server `10.0.80.2/24` (v5), endpoint `vpn.dnanu.de:51820`
+- [x] **97 peers pre-provisioned** (7 admin + 90 user), split-tunnel, DNS 10.0.10.2 (AdGuard)
+- [ ] **Server-routed P2P (2026-08-08):** client AllowedIPs → `10.0.0.0/16`, wg0 forwarding on. Peers reach each other + all zones via host.
+- [ ] **WG v5 renumber:** all 97 peers 10.0.10.x → 10.0.80.x, re-render ALL QRs
 - [ ] Spare slots: fill MACs in users.nix + rebuild
 
 ## ddclient (`ddclient.nix`)

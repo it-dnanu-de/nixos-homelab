@@ -9,7 +9,7 @@
 
 ## Settings (`settings.nix`)
 - [x] domains (public, internal, mail), hostname, hostId
-- [x] IPs (10.0.0.2/24, ULA fd10::2/64), gateway, WireGuard server IP + forwardedPort
+- [x] IPs (10.0.0.2/16 host, ULA fd10::2/64), gateway, container zones (§3.1), WG server 10.0.80.2
 - [x] cloudflare.tunnelId → `734c3fa5` (local-config tunnel, 2026-08-07)
 - [x] timeZone
 - [ ] `sshPubKey` placeholder — **human must set real key**

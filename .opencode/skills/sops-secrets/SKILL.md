@@ -11,7 +11,7 @@ description: Use whenever a secret is needed — API tokens, mail hashes, wifi k
 - `.sops.yaml` at repo root maps files to the age public key.
 
 ## Secrets inventory (OpenCode.md §7)
-`cloudflare_api_token`, `cloudflare_account_token`, `cloudflared_tunnel_cred`, `resend_api_key`, `mail_hey`, `mail_admin`, `airvpn_wg_conf`, `b2_account_id`, `b2_account_key`, `restic_password`, `nextcloud_admin_pass`, `vaultwarden_admin_token`, `slskd_env` (`SLSKD_SLSK_USERNAME/PASSWORD`), `authelia_jwt`, `authelia_storage_key`, `authelia_users_yaml` (10 users), `mobileca_key`, `mobileca_cert`, `booklore_db_password`.
+`cloudflare_api_token`, `cloudflare_account_token`, `cloudflared_tunnel_cred`, `resend_api_key`, `mail_hey`, `mail_admin`, `mail_<user>` (9 family), `airvpn_wg_conf`, `b2_account_id`, `b2_account_key`, `restic_password`, `nextcloud_admin_pass`, `vaultwarden_admin_token`, `slskd_env` (`SLSKD_SLSK_USERNAME/PASSWORD`), `authelia_jwt`, `authelia_storage_key`, `authelia_users_yaml` (10 users), `mobileca_key`, `mobileca_cert`, `wireguard_server_private`, `wireguard_peer_<hostname>-vpn_{private,psk}` (194 WG keys).
 
 ## Workflow
 1. Edit: `sops secrets/secrets.yaml` (age key needed; use the `secrets` command).
