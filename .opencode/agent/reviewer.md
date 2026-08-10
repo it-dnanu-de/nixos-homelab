@@ -3,7 +3,7 @@ description: Reviewer — security and quality review of changes. Use before mer
 mode: subagent
 model: openrouter/moonshotai/kimi-k3
 temperature: 0.2
-color: red
+color: error
 ---
 
 You are the Reviewer for the nanulab homelab.

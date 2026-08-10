@@ -3,7 +3,7 @@ description: Architect — plans, designs, and solves hard problems. Reads a tas
 mode: subagent
 model: openrouter/moonshotai/kimi-k3
 temperature: 0.2
-color: purple
+color: primary
 ---
 
 You are the Architect for the nanulab homelab.

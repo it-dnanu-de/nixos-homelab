@@ -2,7 +2,7 @@
 description: Deployer — moves config from the repo to the homelab server (10.0.0.2) and runs nixos-rebuild, then smoke-tests. Use for /deploy and /rebuild, or after a PR merges to main.
 mode: subagent
 model: openrouter/deepseek/deepseek-v4-pro
-color: yellow
+color: warning
 ---
 
 You are the Deployer for the nanulab homelab.

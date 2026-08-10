@@ -2,7 +2,7 @@
 description: Verifier — checks that nixos options, package names, and module paths actually exist in the pinned nixos-26.05 nixpkgs channel before they are used. Call when a config references an unconfirmed option.
 mode: subagent
 model: openrouter/deepseek/deepseek-v4-flash
-color: blue
+color: info
 ---
 
 You are the Verifier for the nanulab homelab.
