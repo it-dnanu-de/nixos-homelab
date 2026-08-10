@@ -51,7 +51,11 @@
 
 **v1 in-scope (all media types):** movies + TV (Seerr → Radarr/Sonarr → Prowlarr → qBittorrent/SABnzbd → Jellyfin → LiquidFin), music (Mixarr → Lidarr → Prowlarr → downloaders → Jellyfin → LiquidFin), audiobooks (manual → Jellyfin → LiquidFin), books (Shelfarr → Livrarr/Readarr → Prowlarr → downloaders → Jellyfin → LiquidFin). Plus Home Assistant (10 declared users), Glance dashboard, Beszel, restic→B2, and the `.mobileconfig` generator. Hugo site is **v2**.
 
-**Users — single source of truth (2026-08-08):** `users.nix` is the single source for ALL services. Each user profile carries: tier, name, email (`<user>@dnanu.de`), device MACs, and per-service provisioning (mail, nextcloud, vault, HA, jellyfin). Every service module reads from `users.nix` — one place edits a user. **11 mailboxes** (hey@, admin@, + 9 family users), separate mailboxes per user, current alias set (hey@ 8 aliases + admin@ 5) kept. **All 10 users provisioned on everything** (mail, nextcloud, vault, HA, jellyfin); no per-user opt-out — "mail is not user-choice".
+**Users — single source of truth (2026-08-08):** `users.nix` is the single source for ALL services. Each user profile carries: tier (admin/user/family), first/last name → **username = `first.last`** (e.g. `dumitru.nanu`), email (`<username>@dnanu.de`), timezone, device MACs, and per-service provisioning (mail, nextcloud, vault, HA, jellyfin). Every service module reads from `users.nix` — one place edits a user. **11 mailboxes** (hey@, admin@, + 9 family users), separate mailboxes per user, current alias set (hey@ 8 aliases + admin@ 5) kept. **All 10 users provisioned on everything**; no per-user opt-out — "mail is not user-choice". **`first.last` rename is a dedicated milestone** (2026-08-08).
+
+**Auth & user provisioning — Authentik (2026-08-08):** **Authentik replaces Authelia** as the IdP (accept heavier RAM on the Dell; prod 64GB solves it). Runs via the `nix-community/authentik-nix` flake (no `services.authentik` in pinned 26.05 — the flake is the module source). Provides: **self-service signup + invites** (the "iCloud-style" flow), **admin webUI** (users/groups/roles/service access), **full OIDC SSO** into Nextcloud, Vaultwarden, HA, Jellyfin, Glance, arrs (one login everywhere), password reset + recovery emails. **users.nix drives Authentik declaratively via blueprints** (YAML: users, groups, flows, providers) — new user in users.nix → blueprint → Authentik account + per-service provisioning. **Profile/WG-QR page lives inside Authentik** (custom page). The standalone provisioning portal idea is folded into Authentik's flows; devices/MACs still admin-managed in users.nix (MAC = LAN/DHCP identity; WireGuard uses its own generated keys).
+
+**Password model (2026-08-08):** one password per user, applied to all services. Set by the user (self-service via Authentik signup/reset) or via the admin+user helper flow — the plaintext is never visible to the admin. Hashes per-service format live in sops (`user_<name>_pass_<service>`); services that can't read hash files (Vaultwarden, Jellyfin, HA) get the password set via their provisioning API. Password reset via recovery email → Authentik.
 
 **Email rule (2026-08-08):** **no server-initiated ALERT emails** to hey@ (watchdog/cron). Transactional emails users trigger (Vaultwarden password reset, Nextcloud share notifications) stay via local postfix → Resend relay, From `app@dnanu.de`. Alerts surface on the **Glance dashboard** instead.
 
@@ -103,7 +107,7 @@ Dell-specific: `services.logind.lidSwitch = "ignore"` (lid closed ≠ suspend �
 - **All services = NixOS containers** (`containers.<name>`, systemd-nspawn). Zone addressing:
   | Block | Zone | Contents | Reachability |
   |---|---|---|---|
-  | `10.0.10.0/24` | system/ops | nginx, mail, AdGuard, Kea, Authelia, ddclient, cloudflared, restic, Glance, Beszel | nginx + admin |
+  | `10.0.10.0/24` | system/ops | nginx, mail, AdGuard, Kea, Authentik, ddclient, cloudflared, restic, Glance, Beszel | nginx + admin |
   | `10.0.20.0/24` | backend-cloud | PostgreSQL, Redis, MariaDB, Collabora | **host-side (no LAN IP)** |
   | `10.0.30.0/24` | frontend-cloud | Nextcloud, Immich, Vaultwarden, HA | macvlan, via nginx |
   | `10.0.40.0/24` | backend-media | Sonarr, Radarr, Lidarr, Readarr, Livrarr, Prowlarr | **host-side (no LAN IP)** |
@@ -136,8 +140,8 @@ Router column total: **25/tcp + 51820/udp only**.
 - **97 peers fully pre-provisioned** (7 admin admin3-9-vpn + 90 user [user]+[user]1-9-vpn) with real keypairs — **v5 renumber to `10.0.80.x`** (was 10.0.10.x). Spare slots: MAC=TODO, QR pre-rendered; claim = fill MAC + rebuild. Public keys in `wireguard-pubkeys.nix` (committed). Private keys + PSKs in sops (194 keys). Keygen via `scripts/gen-wg-keys.sh`.
 - Endpoint `vpn.dnanu.de` (grey cloud, ddclient) — router forwards **UDP 51820 → 10.0.0.2** (host). WireGuard silently drops unauthenticated packets.
 - Client configs push `DNS = 10.0.10.2` (AdGuard container) and `AllowedIPs = 10.0.0.0/16` (whole internal space via tunnel); internet stays direct. **Server-routed P2P enabled** (clients reach each other + all zones via host, per 2026-08-08 ruling).
-- Reachability split: `*.nanulab.de` vhosts via nginx ACLs from `users.nix` (admin LAN 10.0.70.1-9 + VPN 10.0.80.3-9, user LAN 10.0.70.10-99 + VPN 10.0.80.3-99). AdGuard UI admin-tier. `profile.dnanu.de` reachable without VPN (cloudflared + Authelia).
-- Onboarding: `wireguard-profile-render` oneshot → per-user `.conf` + QR PNGs → `profile.dnanu.de/<user>/` behind Authelia. Admin page shows 7 QRs, users 10.
+- Reachability split: `*.nanulab.de` vhosts via nginx ACLs from `users.nix` (admin LAN 10.0.70.1-9 + VPN 10.0.80.3-9, user LAN 10.0.70.10-99 + VPN 10.0.80.3-99). AdGuard UI admin-tier. `profile.dnanu.de` reachable without VPN (cloudflared + Authentik).
+- Onboarding: `wireguard-profile-render` oneshot → per-user `.conf` + QR PNGs → `profile.dnanu.de/<user>/` behind Authentik. Admin page shows 7 QRs, users 10.
 - Fallback: headscale + headplane (native, verified 26.05) if declarative WG peer management ever becomes a burden — §15.
 
 ### 3.4 Split-Horizon DNS — ✅ LOCKED (this is what makes iOS work)
@@ -328,7 +332,7 @@ nixos-homelab/
 | cloudflared | `services.cloudflared` | — | `.10` system | ✅ | §3.6, config_src=local |
 | Mail | SNM `mailserver.*` | `mail.dnanu.de` | `.10` system | ✅ | §4, 11 mailboxes, verified green |
 | Cloudflare DNS sync | systemd service | — | `.10` system | ✅ | DNS/DKIM/TLSA/MTA-STS upsert |
-| Authelia | `services.authelia` | `profile.dnanu.de` | `.10` system | ✅ | 10 users, auth_request gate |
+| Authentik | `nix-community/authentik-nix` flake (`services.authentik`) | `auth.dnanu.de` + `profile.dnanu.de` | `.10` system | ⬜ | IdP: self-service signup+invites, admin UI, OIDC SSO, blueprint-driven from users.nix; replaces Authelia |
 | Nextcloud | `services.nextcloud` | `cloud.nanulab.de` | `.30` frontend-cloud | ✅ | pg+redis; apps mail/calendar/contacts/richdocuments/files; 16G; RAM-tuned |
 | Collabora | `services.collabora-online` | `office.nanulab.de` | `.20` backend-cloud | ✅ | Nextcloud Office backend (host-side) |
 | Immich | `services.immich` | `photos.nanulab.de` | `.30` frontend-cloud | ✅ | `/fast/immich`; ML off on Dell |
@@ -354,12 +358,13 @@ nixos-homelab/
 | slskd | `services.slskd` | via VPN bridge IP | `.10` system | ✅ in | AirVPN netns; confirmed in stack (2026-08-08) |
 | VPN | `vpnNamespaces.wg` (VPN-Confinement) | — | host | ⬜ | `wireguardConfigFile`=sops; portMappings; openVPNPorts |
 
-## 10. The `.mobileconfig` / profile generator — ✅ LOCKED design
+## 10. Profile / WG-QR page — ✅ inside Authentik (2026-08-08)
 
-1. Human generates a root CA on their machine (`openssl`); key+cert stored in sops (`mobileca_*`). **Never** generate in a Nix build — `/nix/store` is world-readable. *(Unsigned certs are acceptable for now — human ruling, Mac dead.)*
-2. Systemd oneshot renders a static `.mobileconfig` (payloads: IMAP `mail.dnanu.de:993` SSL, SMTP `mail.dnanu.de:465` SSL, CalDAV + CardDAV → `cloud.nanulab.de/remote.php/dav`, embedded CA cert payload, **no passwords** — iOS prompts at install), signs it via `openssl smime -sign`, writes to `/var/lib/mobileprofile/`.
-3. nginx serves it at `profile.dnanu.de` behind Authelia. The standalone DNS `.mobileconfig` was **retired 2026-08-06** — DNS rides in the WireGuard peer configs. The vhost also serves per-user WireGuard configs + QR PNGs: `profile.dnanu.de/<user>/` (wireguard-profile-render oneshot). Admin sees 7 QRs, users see 10.
-4. Flow: VPN or LAN on → open `profile.dnanu.de` → Authelia login → download → install → Mail/Calendar/Contacts work. Service TLS is real Let's Encrypt — the CA exists only for the "Verified" badge.
+The `.mobileconfig` generator is **dropped** (2026-08-08 — iOS/Android users configure mail/calendar via Nextcloud app / DAVx5; no platform imbalance). The profile page lives **inside Authentik**:
+1. `profile.dnanu.de` is a custom Authentik page (OIDC-gated) showing the user's **WireGuard QRs** (all their device peers, rendered by `wireguard-profile-render`) + config downloads + a setup guide (iOS/Android/PC).
+2. Admin sees all QRs; users see their own. Admin page shows 7 admin QRs, user pages 10.
+3. Flow: VPN or LAN on → `profile.dnanu.de` → Authentik login → WG QR → WireGuard app → On-Demand. Mail/calendar via Nextcloud app (both platforms, equal).
+4. Devices/MACs still admin-managed in `users.nix` (MAC = LAN/DHCP; WG uses its own generated keys).
 
 ## 11. Backups (Restic → Backblaze B2)
 
@@ -375,7 +380,7 @@ nixos-homelab/
 **On the human's machine (once):** generate age keypair (private → USB + password manager); generate mobile CA; clone repo; edit `settings.nix`; `sops secrets/secrets.yaml` to fill §7; commit via PR.
 **Install:** boot NixOS ISO on Dell (ethernet) → start sshd, set password → `nix run github:nix-community/nixos-anywhere -- --flake .#homelab --extra-files <dir-with-age-key> root@<ip>` → disko formats, installs, reboots.
 **Day-2 flow:** PR merges to `main` → server: `cd /etc/nixos && git pull origin main && nixos-rebuild switch --flake .#homelab`. Rollback = `nixos-rebuild switch --rollback` or boot menu.
-**1% manual (~45 min):** disable Speedport DHCPv4 (+DHCPv6 if UI allows); switch dumitru iPhone off manual `10.0.0.3` → DHCP (Kea reservation hands it `10.0.0.10`); verify UDP 51820 forward (done 2026-08-05); keep Speedport DHCP pointing at AdGuard + IPv6 enabled; **Speedport v6 pass-through** (fixes internet.nl IPv6 — §3.5); fill iza/kerem/hannah MACs in `users.nix`; re-scan ALL WG QRs post-deploy; distribute Authelia + mail passwords; optional `rm /var/lib/AdGuardHome/leases.json`; Nextcloud admin + link Mail app to local IMAP; Jellyfin admin + libraries; Prowlarr indexers; connect managers to downloaders; Seerr↔Jellyfin; Vaultwarden admin; HA onboarding; Beszel agent key; **mail-tester.com + internet.nl after mail deploy (done 2026-08-07 — see §4.1); flip DMARC to `p=reject` after 30 clean days; publish DS records at registrar (both zones, §3.7, activates DANE).**
+**1% manual (~45 min):** disable Speedport DHCPv4 (+DHCPv6 if UI allows); switch dumitru iPhone off manual `10.0.0.3` → DHCP (Kea reservation hands it `10.0.0.10`); verify UDP 51820 forward (done 2026-08-05); keep Speedport DHCP pointing at AdGuard + IPv6 enabled; **Speedport v6 pass-through** (fixes internet.nl IPv6 — §3.5); fill iza/kerem/hannah MACs in `users.nix`; re-scan ALL WG QRs post-deploy; distribute Authentik + mail passwords (or self-service signup); optional `rm /var/lib/AdGuardHome/leases.json`; Nextcloud admin + link Mail app to local IMAP; Jellyfin admin + libraries; Prowlarr indexers; connect managers to downloaders; Seerr↔Jellyfin; Vaultwarden admin; HA onboarding; Beszel agent key; **mail-tester.com + internet.nl after mail deploy (done 2026-08-07 — see §4.1); flip DMARC to `p=reject` after 30 clean days; publish DS records at registrar (both zones, §3.7, activates DANE).**
 
 ## 13. Verification Suite (run after install / deploy)
 

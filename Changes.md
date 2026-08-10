@@ -1,5 +1,21 @@
 # Changes.md — temporary session log (wiped into OpenCode.md at end of session)
 
+## 2026-08-08 — Auth direction: Authentik replaces Authelia + user-provisioning design
+
+### Decision (human-driven)
+- **Authentik replaces Authelia** as the IdP (accept heavier RAM on the Dell; prod 64GB solves it). Via `nix-community/authentik-nix` flake (no `services.authentik` in pinned 26.05).
+- Provides: self-service signup + one-time invites, admin webUI (users/groups/roles/service access), **full OIDC SSO** (Nextcloud/Vaultwarden/HA/Jellyfin/Glance/arrs), password reset + recovery email.
+- **users.nix drives Authentik declaratively via blueprints** (YAML users/groups/flows/providers).
+- **Username = first.last** (e.g. dumitru.nanu); email = username@dnanu.de; admin stays 'admin'. Dedicated rename milestone.
+- **Profile/WG-QR page lives inside Authentik**; `.mobileconfig` generator **dropped** (Nextcloud app for mail/cal on both platforms).
+- **Password model:** one password per user, self-set (Authentik signup/reset); per-service hashes in sops; Vaultwarden/Jellyfin/HA via provisioning API.
+- **HA only for family-tier** users (at home).
+- Devices/MACs still admin-managed in users.nix (MAC = LAN/DHCP; WG uses its own keys).
+- Docs updated: OpenCode.md (vision, §3.1, §3.3, §9, §10, §12), TODO 05.
+
+---
+(previous session history preserved below)
+
 ## 2026-08-08 — Full .md sweep for the container architecture
 
 Brought every markdown file in line with the 2026-08-08 container/zone ruling:
