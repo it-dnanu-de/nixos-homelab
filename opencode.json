@@ -24,6 +24,15 @@
       "enabled": true,
       "timeout": 30000
     },
+    "openrouter": {
+      "type": "remote",
+      "url": "https://mcp.openrouter.ai/mcp",
+      "enabled": true,
+      "timeout": 30000,
+      "headers": {
+        "Authorization": "Bearer {env:OPENROUTER_API_KEY}"
+      }
+    },
     "github": {
       "type": "remote",
       "url": "https://api.githubcopilot.com/mcp/",
