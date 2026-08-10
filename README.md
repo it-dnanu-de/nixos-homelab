@@ -20,7 +20,7 @@ A 20-year NixOS homelab for **dnanu.de**. Single node, single user, 99% declarat
 | Storage (ZFS, disko, `/fast` `/slow` layout) | ✅ |
 | Networking (static IP, firewall, AdGuard, Kea, WireGuard 97 peers, ddclient, ACME, nginx, tunnel, DNSSEC) | ✅ |
 | Mail (SNM + Resend, sieve, hardening) | ✅ verified green (mail-tester/MECSA/DANE) |
-| Identity & Access (Authelia, nginx ACL, profile/QRs) | ✅ |
+| Identity & Access (Authentik IdP, nginx ACL, profile/QRs) | ~ |
 | Cloud Services (Nextcloud+Office, Collabora, Immich, Vaultwarden) | ✅ |
 | Downloads & VPN (qBit/SAB/slskd + confinement) | ⬜ next milestone |
 | Arr Stack (Radarr/Sonarr/Lidarr/Readarr, Prowlarr, Seerr) | ⬜ |

@@ -37,7 +37,7 @@ modules/{networking,services,system}/*.nix
 4. Mail (SNM + Resend relay + sieve + DNS table) ✅
 5. Nextcloud (+Office) + Immich + Vaultwarden ✅
 6. Containerize all services (NixOS containers, /16 zones, WG v5) ⬜
-7. .mobileconfig signer ⬜
+7. Authentik (IdP + profile page) ⬜
 8. Restic + Beszel + Glance + verification suite ⬜
 
 ## Agent routing (this harness)

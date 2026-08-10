@@ -11,7 +11,7 @@ description: Use whenever a secret is needed — API tokens, mail hashes, wifi k
 - `.sops.yaml` at repo root maps files to the age public key.
 
 ## Secrets inventory (OpenCode.md §7)
-`cloudflare_api_token`, `cloudflare_account_token`, `cloudflared_tunnel_cred`, `resend_api_key`, `mail_hey`, `mail_admin`, `mail_<user>` (9 family), `airvpn_wg_conf`, `b2_account_id`, `b2_account_key`, `restic_password`, `nextcloud_admin_pass`, `vaultwarden_admin_token`, `slskd_env` (`SLSKD_SLSK_USERNAME/PASSWORD`), `authelia_jwt`, `authelia_storage_key`, `authelia_users_yaml` (10 users), `mobileca_key`, `mobileca_cert`, `wireguard_server_private`, `wireguard_peer_<hostname>-vpn_{private,psk}` (194 WG keys).
+`cloudflare_api_token`, `cloudflare_account_token`, `cloudflared_tunnel_cred`, `resend_api_key`, `mail_hey`, `mail_admin`, `mail_<user>` (9 family), `airvpn_wg_conf`, `b2_account_id`, `b2_account_key`, `restic_password`, `nextcloud_admin_pass`, `vaultwarden_admin_token`, `slskd_env` (`SLSKD_SLSK_USERNAME/PASSWORD`), `authentik_secret_key`, `authentik_postgres_password`, `user_<name>_pass_<service>` (per-user per-service password hashes), `wireguard_server_private`, `wireguard_peer_<hostname>-vpn_{private,psk}` (194 WG keys). *(authelia_* + mobileca_* removed with Authelia/.mobileconfig — 2026-08-08.)*
 
 ## Workflow
 1. Edit: `sops secrets/secrets.yaml` (age key needed; use the `secrets` command).
@@ -23,4 +23,4 @@ description: Use whenever a secret is needed — API tokens, mail hashes, wifi k
 - Never commit a decrypted value. If you're about to, stop.
 - New secret added -> update the inventory in OpenCode.md §7.
 - sops `--set` writes a YAML mapping for nested values; when a secret must be a JSON *string* (e.g. `cloudflared_tunnel_cred`), set it as a JSON-encoded string or cloudflared won't parse it.
-- The mobile CA key/cert (`mobileca_*`) is generated on the human's machine, stored in sops, and used by the `.mobileconfig` signer — never generated in a Nix build.
+- Authentik secrets (`authentik_secret_key`, `authentik_postgres_password`) are referenced via `environmentFile` in the authentik-nix module.

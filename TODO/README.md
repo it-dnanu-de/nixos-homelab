@@ -18,7 +18,7 @@
 | 02 | [Storage (ZFS + disko)](02-Storage/todo.md) | ~ reformat pending | **Dell to mirror `/fast`+`/slow`** (early milestone) |
 | 03 | [Networking](03-Networking/todo.md) | ✅ done | IP, firewall, DNS, WG, tunnel |
 | 04 | [Mail](04-Mail/todo.md) | ✅ done + verified | SNM + Resend + hardening; mail-tester/MECSA/DANE green 2026-08-07 |
-| 05 | [Identity & Access](05-Identity-Access/todo.md) | ✅ done | Authelia, WG peers, profiles |
+| 05 | [Identity & Access](05-Identity-Access/todo.md) | ~ rework | Authentik IdP (replaces Authelia), WG peers, profiles |
 | 06 | [Cloud Services](06-Cloud-Services/todo.md) | ✅ done | Nextcloud(+Office), Collabora, Immich, Vaultwarden |
 | 07 | [Downloads & VPN](07-Downloads/todo.md) | ⬜ next | qBit, SAB, slskd, VPN-Confinement netns |
 | 08 | [Arr Stack](08-Arr-Stack/todo.md) | ⬜ | Radarr/Sonarr/Lidarr/Readarr + Prowlarr + Seerr (stack LOCKED) |
@@ -42,7 +42,7 @@ Then the media pipeline: **Downloads & VPN (07) → Arr Stack (08) → Media Pla
 - [ ] Declarative account creation (occ/CLI oneshots, idempotent) — design + build across services (OpenCode.md vision)
 - [ ] Switch dumitru iPhone off manual `10.0.0.3` → DHCP (Kea hands out `10.0.0.10`)
 - [ ] Re-scan ALL WireGuard QRs post-v4 deploy (deployed gen is v2 `10.0.1.x`)
-- [ ] Distribute Authelia passwords (10 users)
+- [ ] Authentik: self-service signup / distribute invites
 - [ ] Publish DS records at DENIC registrar (DNSSEC §3.7) — activates DANE (TLSA `3 1 1` already published + matching)
 - [ ] Flip DMARC `p=quarantine` → `p=reject` after 30 clean days
 - [ ] `sshPubKey` placeholder in `settings.nix` — none found on machine/server; human to provide
