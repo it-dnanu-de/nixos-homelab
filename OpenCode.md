@@ -24,30 +24,30 @@
 `request service → *arr → indexer → downloader → *arr manages → player → client app`
 
 **Media stack — ✅ LOCKED (2026-08-08):**
-| Role | Service | Runtime |
+| Role | Service | Container zone |
 |---|---|---|
 | Client | **LiquidFin** (Apple; user choice; v1 personal pick, v2 client-agnostic) | external app |
-| Player | **Jellyfin** (the ONLY player — movies/TV/music/audiobooks/books) | **native NixOS module** |
-| Index manager | **Prowlarr** | **native NixOS module** |
-| Movies manager | **Radarr** | Docker container |
-| TV manager | **Sonarr** | Docker container |
-| Music manager | **Lidarr** | Docker container |
-| Books/audiobooks manager | **Livrarr** | Docker container |
-| Books arr | **Readarr** (pinned + rreading-glasses mirror) | Docker container |
-| Requests (movies/TV) | **Seerr** | Docker container |
-| Requests (music) | **Mixarr** | Docker container |
-| Requests (books/audiobooks) | **Shelfarr** | Docker container |
-| Downloaders | **qBittorrent + SABnzbd** (VPN-Confinement netns) | native |
+| Player | **Jellyfin** (the ONLY player — movies/TV/music/audiobooks/books) | frontend-media `.50` |
+| Index manager | **Prowlarr** | backend-media `.40` |
+| Movies manager | **Radarr** | backend-media `.40` |
+| TV manager | **Sonarr** | backend-media `.40` |
+| Music manager | **Lidarr** | backend-media `.40` |
+| Books/audiobooks manager | **Livrarr** | backend-media `.40` |
+| Books arr | **Readarr** (pinned + rreading-glasses mirror) | backend-media `.40` |
+| Requests (movies/TV) | **Seerr** | frontend-media `.50` |
+| Requests (music) | **Mixarr** | frontend-media `.50` |
+| Requests (books/audiobooks) | **Shelfarr** | frontend-media `.50` |
+| Downloaders | **qBittorrent + SABnzbd + slskd** (VPN-Confinement netns, all confirmed) | `.10` system (VPN-isolated) |
 | Audiobooks | manual (no arr; drop into Jellyfin audiobook library) | — |
 | Podcasts / comics / manga | **dropped** | — |
 
-**Container rule (2026-08-08):** media managers + request services run as **Docker containers** via `virtualisation.oci-containers.containers.<name>` (backend `docker`), even though most have native modules — uniform runtime per human ruling. Jellyfin + Prowlarr stay native. Optionally generate from `docker-compose.yml` via `compose2nix` (packaged in 26.05, sops integration built in). Each container = a managed systemd unit; bind loopback-only ports, nginx proxies with ACLs.
+**Container model (2026-08-08 architecture ruling):** **ALL services are NixOS containers** (`containers.<name>`, systemd-nspawn) — the Docker/oci-containers model is **retired**. Each service = a NixOS container with its own NixOS config, placed in a network zone (see §3.1). Backends + DBs are host-side (no LAN IP); only nginx + frontends get macvlan LAN presence. nginx = single ingress. **Every service module (`services.nextcloud`, `services.jellyfin`, …) becomes the container's internal config.**
 
-**Container declarability model (2026-08-08):**
-- **Fully declarative in Nix:** container image (pinned digest), ports (loopback), volumes (bind-mounts to `/slow`/`/fast`), environment + `environmentFiles` (sops), auto-start/restart. Never touch `docker` CLI.
-- **Declarative config seeding:** each app boots with a Nix-shipped `config.xml` (port, url base, auth) so it starts already-mostly-configured.
-- **Web UI once, persists forever:** the DB-level state (download-client connections with API keys, indexers with credentials, root folders, quality profiles) lives in the bind-mounted `/config` volume — configured **once** via web UI, persists across every rebuild/reboot (same mechanism as Nextcloud/Vaultwarden DBs). No bootstrap scripts poking APIs — they rot (philosophy §1.1).
-- The web-UI-once step is part of the §12 "1% manual" list for the media milestone.
+**Container declarability model:**
+- **Container = a NixOS systemd-nspawn container** declared in Nix (`containers.<name>`), fully declarative: its own `services.*` config, storage, network zone. No Docker.
+- **Users declarative:** per-service accounts provisioned via occ/CLI oneshots at first boot (idempotent), from `users.nix`.
+- **Web UI once, persists forever:** DB-level state (download clients, indexers, root folders) lives in the container's `/var/lib` or `/fast/containers/<app>` — configured once via web UI, persists across rebuild/reboot.
+- The web-UI-once step is part of the §12 "1% manual" list.
 
 **v1 in-scope (all media types):** movies + TV (Seerr → Radarr/Sonarr → Prowlarr → qBittorrent/SABnzbd → Jellyfin → LiquidFin), music (Mixarr → Lidarr → Prowlarr → downloaders → Jellyfin → LiquidFin), audiobooks (manual → Jellyfin → LiquidFin), books (Shelfarr → Livrarr/Readarr → Prowlarr → downloaders → Jellyfin → LiquidFin). Plus Home Assistant (10 declared users), Glance dashboard, Beszel, restic→B2, and the `.mobileconfig` generator. Hugo site is **v2**.
 
@@ -62,7 +62,9 @@
 **WireGuard P2P (2026-08-08):** server-routed peer-to-peer enabled — client `AllowedIPs` = `10.0.0.0/24` + `10.0.10.0/24`, wg0 forwarding on. Peers reach each other via the server. (AirDrop itself is Bluetooth/WiFi-direct, unaffected.)
 
 **Core rules:**
-- **Native modules preferred for infra; containers used where decided.** Media managers + request services run as **Docker containers** (`virtualisation.oci-containers`, backend docker) per the locked media stack. Jellyfin + Prowlarr native. "Zero containers" was a phase-1 simplification; it is retired.
+- **All services run as NixOS containers** (`containers.<name>`, systemd-nspawn) with per-tier network placement (2026-08-08 architecture ruling). The host is a bare core (ZFS, kernel WireGuard, container runtime). Docker/oci-containers model is **retired** in favor of native NixOS containers.
+- **Tiered network zones with real isolation:** `10.0.0.0/16` LAN. Blocks: `.10` system/ops, `.20` backend-cloud (DBs+Collabora), `.30` frontend-cloud, `.40` backend-media (arrs), `.50` frontend-media, `.60` IoT, `.70` users LAN, `.80` users VPN, `.90` guests. **Default-deny nftables between zones**; explicit allows only (frontends→their backend, backends→their DB, HA→IoT, nginx→all). **Backends + DBs are host-side (no LAN IP, unreachable from user devices)**; only nginx + frontends get macvlan LAN presence. **nginx is the single ingress** to all services.
+- **WG clients move to `10.0.80.0/24` (Users VPN)** — v5 renumber (from 10.0.10.x), all 97 peers, QR re-render. WG server stays on the host.
 - Downloader VPN isolation via **VPN-Confinement network namespaces** (AirVPN).
 - **Prod switch = change only `disko.nix` + `hardware-configuration.nix` + `zfsArcMax` in settings.nix.** Everything else identical. The Dell is reformatted early in v1 to mirror `/fast` + `/slow` so this contract holds.
 - **Accounts are declarative** — created via occ/CLI oneshots on first install (idempotent), not web UI. `users.nix` is the single source.
@@ -74,7 +76,7 @@
 ## 1. Philosophy & Hard Rules
 
 1. **99% Declarative Rule.** NixOS declares infrastructure: ZFS, networking, services, users, paths, secrets, TLS. The human configures application *state* once via web UIs (admin accounts, indexers, libraries). No bootstrap scripts poking APIs — they rot.
-2. **Native NixOS modules preferred for infra; Docker containers where decided.** Media managers + request services run as Docker containers (`virtualisation.oci-containers`, backend docker) per the locked media stack; Jellyfin + Prowlarr stay native. VPN isolation always uses `VPN-Confinement` namespaces, not containers.
+2. **All services are NixOS containers** (`containers.<name>`, systemd-nspawn) with tiered network zones (2026-08-08). Host = bare core (ZFS, kernel WG, container runtime). Per-tier default-deny isolation; nginx is the single ingress; backends are host-side (no LAN IP). Docker/oci-containers retired. VPN isolation always uses `VPN-Confinement` namespaces, not containers.
 3. **Zero open ports** except TCP 25 (inbound SMTP) + UDP 51820 (WireGuard), both forwarded to `10.0.0.2`. Everything else rides the WireGuard VPN, the Cloudflare tunnel, or a confined netns.
 4. **Stable channel, pinned flake.** `nixpkgs` follows `nixos-26.05`. No auto-upgrades. Human runs `nix flake update` deliberately, 2–4×/year.
 5. **Single-node monolith.** No clustering.
@@ -95,35 +97,48 @@ Dell-specific: `services.logind.lidSwitch = "ignore"` (lid closed ≠ suspend �
 
 ## 3. Network Architecture
 
-### 3.1 Topology
-- Router: Telekom Speedport Smart 4 @ `10.0.0.1`. **DHCPv4 must be disabled** (DHCPv6 disabled-if-possible, else harmless coexistence — Kea serves only ULA). IPv6 stays on (mail + modern infra need it — §3.5).
-- Server: **static** `10.0.0.2/24`, gw `10.0.0.1`, ULA `fd10::2/64`, declared in NixOS. No ARP tricks.
-- **v4 user-block addressing (2026-08-06):** `users.nix` is the single source of truth for IP allocation. Blocks: admin (0-9; admin0=net addr, admin1=router, admin2=homelab=WG server, admin3-9=devices), dumitru (.10-19), adela (.20-29), tiberiu (.30-39), david (.40-49), ramona (.50-59), tibisor (.60-69), iza (.70-79), kerem (.80-89), hannah (.90-99). Naming: base=[user] (no number), then [user]1-9. Guests (.100-200, Kea DHCP pool, no VPN), .201-.254 unassigned.
-- **Kea** (`services.kea.dhcp4` + `services.kea.dhcp6`) is the LAN DHCP server. AdGuard Home is **DNS-only**. Kea dhcp4: pool `.100-.200`, 10 host reservations (real MACs only). Kea dhcp6: stateful ULA `fd10::/64`, pool `fd10::100-200`, DNS = `fd10::2`. GUA via Speedport SLAAC (accept_ra=1, no v6 forwarding). Server static ULA `fd10::2/64`.
+### 3.1 Topology — container-tiered /16 (2026-08-08 ruling)
+- Router: Telekom Speedport Smart 4 @ `10.0.0.1`. **LAN scope expanded to `10.0.0.0/16`** (1% manual) so the router reaches all container subnets. **DHCPv4 must be disabled** (DHCPv6 disabled-if-possible — Kea serves ULA). IPv6 stays on (§3.5).
+- Host: **static `10.0.0.2/16`**, gw `10.0.0.1`, ULA `fd10::2/64`. Host = bare core (ZFS, kernel WireGuard, container runtime).
+- **All services = NixOS containers** (`containers.<name>`, systemd-nspawn). Zone addressing:
+  | Block | Zone | Contents | Reachability |
+  |---|---|---|---|
+  | `10.0.10.0/24` | system/ops | nginx, mail, AdGuard, Kea, Authelia, ddclient, cloudflared, restic, Glance, Beszel | nginx + admin |
+  | `10.0.20.0/24` | backend-cloud | PostgreSQL, Redis, MariaDB, Collabora | **host-side (no LAN IP)** |
+  | `10.0.30.0/24` | frontend-cloud | Nextcloud, Immich, Vaultwarden, HA | macvlan, via nginx |
+  | `10.0.40.0/24` | backend-media | Sonarr, Radarr, Lidarr, Readarr, Livrarr, Prowlarr | **host-side (no LAN IP)** |
+  | `10.0.50.0/24` | frontend-media | Jellyfin, Seerr, Mixarr, Shelfarr | macvlan, via nginx |
+  | `10.0.60.0/24` | IoT | IoT devices | isolated; only HA reaches it |
+  | `10.0.70.0/24` | users LAN | family devices (v4 blocks mirrored) | normal LAN |
+  | `10.0.80.0/24` | users VPN | WireGuard peers (v5) | via WG |
+  | `10.0.90.0/24` | guests | DHCP pool | DNS-only, isolated |
+- **Zone isolation:** default-deny nftables between zones; explicit allows only (frontends→their backend, backends→their DB, HA→IoT, nginx→all). Backends + DBs on host-side bridges (no LAN IP, unreachable from user devices). Only nginx + frontends get macvlan LAN presence. **nginx = single ingress.**
+- **Users:** `users.nix` is the single source of truth. v4 blocks mirrored: users LAN `.70` (admin .70.0-9, dumitru .70.10-19, adela .70.20-29, …), users VPN `.80` (WG peers, same offsets). TV/Air/Xbox moved to IoT (`.60`).
+- **Kea** (`services.kea.dhcp4` + `services.kea.dhcp6`) is the LAN DHCP server. AdGuard Home is **DNS-only**. Kea dhcp4: guest pool `.90.100-.200` + host reservations (real MACs). Kea dhcp6: stateful ULA `fd10::/64`, pool `fd10::100-200`, DNS = `fd10::2`. GUA via Speedport SLAAC. Host static ULA `fd10::2/64`.
 
-### 3.2 Ports & Exposure — ✅ LOCKED
+### 3.2 Ports & Exposure — ✅ LOCKED (router LAN /16, forwards to container IPs)
 
 | Flow | Path | Ports open on router |
 |------|------|----------------------|
-| Inbound SMTP (server→server) | Internet → `mail.dnanu.de` (public A, **grey cloud**, ddclient-updated) → router fwd → `10.0.0.2:25` | **25/tcp** |
-| Public blogs + autoconfig | Internet → Cloudflare edge → `cloudflared` tunnel → nginx `10.0.0.2:8080` | none |
-| Remote access (all devices) | Internet → `vpn.dnanu.de` (grey cloud, ddclient) → router fwd UDP 51820 → `10.0.0.2:51820` (WireGuard) | **51820/udp** |
-| Everything else (Nextcloud, Jellyfin, IMAP 993, submission 465, all admin UIs) | Device → WireGuard tunnel → `10.0.0.2` (nginx 443 / mail 993+465 / admin UIs) | none |
+| Inbound SMTP (server→server) | Internet → `mail.dnanu.de` (public A, **grey cloud**, ddclient-updated) → router fwd → `10.0.10.11:25` (mail container) | **25/tcp** |
+| Public blogs + autoconfig | Internet → Cloudflare edge → `cloudflared` tunnel → nginx `10.0.10.5:8080` | none |
+| Remote access (all devices) | Internet → `vpn.dnanu.de` (grey cloud, ddclient) → router fwd UDP 51820 → `10.0.0.2:51820` (host = WG server) | **51820/udp** |
+| Everything else (Nextcloud, Jellyfin, IMAP 993, submission 465, all admin UIs) | Device → WireGuard tunnel → `10.0.80.x` → nginx `10.0.10.5` (single ingress) | none |
 | Outbound mail | Postfix → `smtp.resend.com:465` (SMTPS, user `resend`, pass = API key) | none |
 | Torrent/Soulseek/Usenet | confined netns → AirVPN WireGuard | none |
 
 Router column total: **25/tcp + 51820/udp only**.
 
-**Host firewall** (audit Finding 1, 2026-08-07): only 25/tcp + 51820/udp globally open; 53/80/443/465/587/993 source-scoped to LAN/ULA/link-local (iptables extraCommands). No service port is publicly reachable through the host.
+**Host firewall** (audit Finding 1, 2026-08-07, updated for containers): only 25/tcp + 51820/udp globally open; everything else rides the container zones. **Zone isolation:** nftables default-deny between the 10.0.x.x zones; explicit allows only (frontends→backend, backends→DB, HA→IoT, nginx→all). Backends/DBs host-side (no LAN IP).
 
-### 3.3 WireGuard — remote-access VPN — ✅ LOCKED (2026-08-05, supersedes Tailscale SaaS; v4 2026-08-06)
-- Kernel WireGuard, `networking.wireguard.interfaces.wg0`, server `10.0.10.2/24` (mirroring LAN 10.0.0.2). No SaaS control plane. **No exit node** (split-tunnel only) — kills the WhatsApp/adguard-reachability/blocking-rate issues.
-- **97 peers fully pre-provisioned** (7 admin admin3-9-vpn + 90 user [user]+[user]1-9-vpn) with real keypairs. Spare slots: MAC=TODO, QR pre-rendered; claim = fill MAC + rebuild. Peers derived from `users.nix` helpers (wgPeers/wgPeerNames). Public keys in generated `wireguard-pubkeys.nix` (97 entries, committed). Private keys + PSKs in sops (`wireguard_peer_<hostname>-vpn_{private,psk}`, **194 keys**). Keygen via `scripts/gen-wg-keys.sh` (idempotent).
-- Endpoint `vpn.dnanu.de` (grey cloud, ddclient-managed) — router forwards **UDP 51820 → 10.0.0.2**. WireGuard silently drops unauthenticated packets: the port answers no scans; no TLS/HTTP/control-plane surface exists.
-- Client configs push `DNS = 10.0.0.2` and `AllowedIPs = 10.0.0.0/24`: all DNS flows through the tunnel to AdGuard (per-device labels via static 10.0.10.x ids), internet traffic stays direct.
-- Reachability split: `*.nanulab.de` service vhosts are **VPN-only** (nginx source allowlist derived from `users.nix` — admin LAN 10.0.0.1-9 + VPN 10.0.10.3-9, user LAN 10.0.0.10-99 + VPN 10.0.10.3-99). AdGuard UI is admin-tier (admin LAN/VPN only). `profile.dnanu.de` is reachable over LAN/WiFi **without VPN** (cloudflared tunnel + Authelia).
-- Onboarding: activation oneshot (`wireguard-profile-render`) renders per-user `.conf` + QR PNGs → `/var/lib/mobileprofile/wg/<user>/`; served at `profile.dnanu.de/<user>/` behind Authelia. iOS = official WireGuard app → scan QR → enable On-Demand (WiFi+Cellular) once. No accounts — possession of the private key IS identity. Admin page shows 7 QRs (admin3-9-vpn), user pages show 10 QRs (all slots).
-- Fallback: headscale + headplane (both native modules, verified in pinned 26.05) if self-service multi-device enrollment is ever needed — §15.
+### 3.3 WireGuard — remote-access VPN — ✅ LOCKED (2026-08-05; v5 subnet 2026-08-08)
+- Kernel WireGuard, `networking.wireguard.interfaces.wg0`, **server on the host at `10.0.80.2/24`** (users VPN zone). No SaaS control plane. **No exit node** (split-tunnel) — kills the WhatsApp/adguard-reachability/blocking-rate issues.
+- **97 peers fully pre-provisioned** (7 admin admin3-9-vpn + 90 user [user]+[user]1-9-vpn) with real keypairs — **v5 renumber to `10.0.80.x`** (was 10.0.10.x). Spare slots: MAC=TODO, QR pre-rendered; claim = fill MAC + rebuild. Public keys in `wireguard-pubkeys.nix` (committed). Private keys + PSKs in sops (194 keys). Keygen via `scripts/gen-wg-keys.sh`.
+- Endpoint `vpn.dnanu.de` (grey cloud, ddclient) — router forwards **UDP 51820 → 10.0.0.2** (host). WireGuard silently drops unauthenticated packets.
+- Client configs push `DNS = 10.0.10.2` (AdGuard container) and `AllowedIPs = 10.0.0.0/16` (whole internal space via tunnel); internet stays direct. **Server-routed P2P enabled** (clients reach each other + all zones via host, per 2026-08-08 ruling).
+- Reachability split: `*.nanulab.de` vhosts via nginx ACLs from `users.nix` (admin LAN 10.0.70.1-9 + VPN 10.0.80.3-9, user LAN 10.0.70.10-99 + VPN 10.0.80.3-99). AdGuard UI admin-tier. `profile.dnanu.de` reachable without VPN (cloudflared + Authelia).
+- Onboarding: `wireguard-profile-render` oneshot → per-user `.conf` + QR PNGs → `profile.dnanu.de/<user>/` behind Authelia. Admin page shows 7 QRs, users 10.
+- Fallback: headscale + headplane (native, verified 26.05) if declarative WG peer management ever becomes a burden — §15.
 
 ### 3.4 Split-Horizon DNS — ✅ LOCKED (this is what makes iOS work)
 - **AdGuard DNS rewrites** (declarative, `mutableSettings = false`):
@@ -301,39 +316,43 @@ nixos-homelab/
 
 ## 9. Service Map — ✅ all modules verified in pinned 26.05
 
-| Service | Module | URL (VPN only unless noted) | Status | Notes |
-|---|---|---|---|---|
-| Nginx | `services.nginx` | — | ✅ | reverse proxy, ACME, ACL v4 (helpers in nginx-helpers.nix) |
-| AdGuard Home | `services.adguardhome` | `adguard.nanulab.de` (admin-IP-only) | ✅ | DNS-only; `mutableSettings=false`; persistent clients from users.nix |
-| Kea | `services.kea.dhcp4` + `.dhcp6` | — | ✅ | LAN DHCPv4 + DHCPv6 (ULA); 10 host reservations |
-| WireGuard | `networking.wireguard` | — | ✅ | §3.3, 97 peers |
-| ddclient | `services.ddclient` | — | ✅ | protocol cloudflare, passwordFile=sops, 300s, use=web |
-| cloudflared | `services.cloudflared` | — | ✅ | §3.6, config_src=local |
-| Mail | SNM `mailserver.*` | `mail.dnanu.de` | ✅ | §4, verified green |
-| Cloudflare DNS sync | `modules/services/cloudflare-dns.nix` | — | ✅ | DNS/DKIM/TLSA/MTA-STS records upsert, idempotent, alerts |
-| Authelia | `services.authelia` | `profile.dnanu.de` | ✅ | 10 users, auth_request gate |
-| Nextcloud | `services.nextcloud` | `cloud.nanulab.de` | ✅ | pg+redis; apps mail/calendar/contacts/**richdocuments**; 16G upload; RAM-tuned |
-| Collabora Online | `services.collabora-online` | `office.nanulab.de` | ✅ | Nextcloud Office backend; `ssl.enable=false`+`ssl.termination=true` (nginx terminates) |
-| Immich | `services.immich` | `photos.nanulab.de` | ✅ | `mediaLocation=/fast/immich`; ML off on Dell |
-| Vaultwarden | `services.vaultwarden` | `vault.nanulab.de` | ✅ | SQLite; `SIGNUPS_ALLOWED=false`; Argon2 ADMIN_TOKEN; declared SMTP via local postfix |
-| Jellyfin | `services.jellyfin` | `media.nanulab.de` | ⬜ | **the ONLY player** — movies/TV/music/audiobooks/books. SNB iGPU: `intel-vaapi-driver`; prod: `intel-media-driver` |
-| ~~Navidrome~~ | ~~`services.navidrome`~~ | — | 🗑 dropped | replaced by Jellyfin (2026-08-08) |
-| ~~Audiobookshelf~~ | ~~`services.audiobookshelf`~~ | — | 🗑 dropped | podcasts dropped; audiobooks → Jellyfin library (manual) |
-| ~~Booklore~~ | ~~OCI container~~ | — | 🗑 dropped | e-books served by Jellyfin book library (2026-08-08) |
-| Seerr | container (`services.seerr` exists in 26.05) | `tv.nanulab.de` | ⬜ | requests for movies/shows (merged Plex/Jellyfin/Emby project); user-facing |
-| Sonarr/Radarr/Lidarr | `services.<name>` | `*.nanulab.de` | ⬜ | TV/movies/music managers; Readarr (books) pinned + rreading-glasses mirror |
-| ~~Prowlarr~~ | `services.prowlarr` | — | ⬜ | indexer manager (one for all arrs) |
-| ~~Bazarr~~ | — | — | 🗑 dropped | no subtitle layer (2026-08-08) |
-| qBittorrent | `services.qbittorrent` | via VPN bridge IP | ⬜ | confined; listen port = AirVPN forwarded port |
-| SABnzbd | `services.sabnzbd` | via VPN bridge IP | ⬜ | confined |
-| slskd | `services.slskd` | via VPN bridge IP | ~ optional | confined; music downloader (only if kept — 2026-08-08 discussion) |
-| ~~beets~~ | — | — | 🗑 dropped | no tag post-processor (arrs manage, Jellyfin reads tags) |
-| ~~soularr~~ | — | — | 🗑 dropped | Lidarr↔slskd bridge dropped with beets/slskd |
-| Home Assistant | `services.home-assistant` | `home.nanulab.de` | ⬜ | half-declared: 10 users declared in Nix, rest via web UI; `trusted_proxies` for nginx |
-| Glance | `services.glance` | `status.nanulab.de` | ⬜ | status dashboard (admin-only): service health + weather + RSS + links; reads mail-queue status file; **replaces email alerts** |
-| Beszel | `services.beszel.hub` + `.agent` | via Glance | ⬜ | monitors host + services + containers (everything) |
-| Restic | `services.restic.backups.b2` | — | ⬜ | §11; nightly 02:00, 7/4/12 retention |
-| VPN | `vpnNamespaces.wg` (VPN-Confinement flake input) | — | ⬜ | `wireguardConfigFile`=sops; `portMappings`; `openVPNPorts`=AirVPN forwarded port; `systemd.services.{qbittorrent,sabnzbd,slskd}.vpnConfinement` |
+> All services run as NixOS containers (2026-08-08). Zone = §3.1 network tier. "host-side" = no LAN IP, only reachable via nginx/host. Backends/DBs hidden.
+
+| Service | Config | URL | Zone | Status | Notes |
+|---|---|---|---|---|---|
+| Nginx | `services.nginx` | — | `.10` system | ✅ | reverse proxy, ACME, ACLs; **single ingress** |
+| AdGuard Home | `services.adguardhome` | `adguard.nanulab.de` (admin) | `.10` system | ✅ | DNS-only; rewrites; persistent clients from users.nix |
+| Kea | `services.kea.dhcp4` + `.dhcp6` | — | `.10` system | ✅ | LAN DHCPv4 + DHCPv6 (ULA); reservations |
+| WireGuard | `networking.wireguard` | — | host (`.80` server) | ✅ | §3.3 v5, 97 peers, server-routed P2P |
+| ddclient | `services.ddclient` | — | `.10` system | ✅ | cloudflare, passwordFile=sops, 300s |
+| cloudflared | `services.cloudflared` | — | `.10` system | ✅ | §3.6, config_src=local |
+| Mail | SNM `mailserver.*` | `mail.dnanu.de` | `.10` system | ✅ | §4, 11 mailboxes, verified green |
+| Cloudflare DNS sync | systemd service | — | `.10` system | ✅ | DNS/DKIM/TLSA/MTA-STS upsert |
+| Authelia | `services.authelia` | `profile.dnanu.de` | `.10` system | ✅ | 10 users, auth_request gate |
+| Nextcloud | `services.nextcloud` | `cloud.nanulab.de` | `.30` frontend-cloud | ✅ | pg+redis; apps mail/calendar/contacts/richdocuments/files; 16G; RAM-tuned |
+| Collabora | `services.collabora-online` | `office.nanulab.de` | `.20` backend-cloud | ✅ | Nextcloud Office backend (host-side) |
+| Immich | `services.immich` | `photos.nanulab.de` | `.30` frontend-cloud | ✅ | `/fast/immich`; ML off on Dell |
+| Vaultwarden | `services.vaultwarden` | `vault.nanulab.de` | `.30` frontend-cloud | ✅ | SQLite; signups off; Argon2 token; SMTP via local postfix |
+| PostgreSQL | `services.postgresql` | — | `.20` backend-cloud | ✅ | shared DB (nextcloud, immich) |
+| Redis | `services.redis` | — | `.20` backend-cloud | ✅ | shared cache |
+| Home Assistant | `services.home-assistant` | `home.nanulab.de` | `.30` frontend-cloud | ⬜ | half-declared: 10 users declared; trusted_proxies |
+| Glance | `services.glance` | `status.nanulab.de` | `.10` system | ⬜ | admin-only dashboard; reads mail status file; **replaces email alerts** |
+| Beszel | `services.beszel.hub` + `.agent` | via Glance | `.10` system | ⬜ | monitors host + services + containers |
+| Restic | `services.restic.backups.b2` | — | `.10` system | ⬜ | §11; nightly 02:00, 7/4/12 |
+| Jellyfin | `services.jellyfin` | `media.nanulab.de` | `.50` frontend-media | ⬜ | the ONLY player; SNB iGPU vaapi / prod intel-media-driver |
+| Seerr | `services.seerr` | `tv.nanulab.de` | `.50` frontend-media | ⬜ | movies/TV requests |
+| Mixarr | container (unpackaged) | `music.nanulab.de` | `.50` frontend-media | ⬜ | music requests |
+| Shelfarr | container (unpackaged) | `books.nanulab.de` | `.50` frontend-media | ⬜ | books/audiobooks requests |
+| Prowlarr | `services.prowlarr` | `prowlarr.nanulab.de` (admin) | `.40` backend-media | ⬜ | indexer manager (host-side) |
+| Radarr | `services.radarr` | `radarr.nanulab.de` (admin) | `.40` backend-media | ⬜ | movies manager (host-side) |
+| Sonarr | `services.sonarr` | `sonarr.nanulab.de` (admin) | `.40` backend-media | ⬜ | TV manager (host-side) |
+| Lidarr | `services.lidarr` | `lidarr.nanulab.de` (admin) | `.40` backend-media | ⬜ | music manager (host-side) |
+| Readarr | `services.readarr` | `readarr.nanulab.de` (admin) | `.40` backend-media | ⬜ | books arr, pinned + mirror (host-side) |
+| Livrarr | container (unpackaged) | `livrarr.nanulab.de` (admin) | `.40` backend-media | ⬜ | books/audiobooks manager (host-side) |
+| qBittorrent | `services.qbittorrent` | via VPN bridge IP | `.10` system | ⬜ | AirVPN netns; listen port = forwarded |
+| SABnzbd | `services.sabnzbd` | via VPN bridge IP | `.10` system | ⬜ | AirVPN netns |
+| slskd | `services.slskd` | via VPN bridge IP | `.10` system | ✅ in | AirVPN netns; confirmed in stack (2026-08-08) |
+| VPN | `vpnNamespaces.wg` (VPN-Confinement) | — | host | ⬜ | `wireguardConfigFile`=sops; portMappings; openVPNPorts |
 
 ## 10. The `.mobileconfig` / profile generator — ✅ LOCKED design
 
@@ -360,7 +379,7 @@ nixos-homelab/
 
 ## 13. Verification Suite (run after install / deploy)
 
-`zpool status` · `wg show` (handshakes < 2 min old for active peers, peers at 10.0.10.x, 97 peers listed, **P2P routes work**) · `systemctl status kea-dhcp4-server kea-dhcp6-server` · Kea leases: arch=`10.0.0.3`, dumitru iPhone=`10.0.0.10`, Xbox=`10.0.0.41`, Samsung TV=`10.0.0.21` · `dig @10.0.0.2 mail.dnanu.de` (→10.0.0.2) · `dig mail.dnanu.de @1.1.1.1` (→home IP) · `dig vpn.dnanu.de @1.1.1.1` (→home IP) · `dig @fd10::2 cloud.nanulab.de` → 10.0.0.2 · cellular with tunnel up: `dig cloud.nanulab.de` → 10.0.0.2 and `curl -kI https://cloud.nanulab.de` works · `curl -kI https://profile.dnanu.de/admin/` (admin sees 7 QRs) · nginx ACL: guest IP → 403 on all vhosts · `curl -k https://profile.nanulab.de` → **404** (catch-all) · AdGuard query log shows 10.0.10.x sources labeled · `swaks --to hey@dnanu.de --server <home-ip>` from outside · send via iOS → confirm delivery · LAN: fresh guest lease ∈ .100-.200 · torrent IP-leak test in qBittorrent · `restic check` · lid-close test · `systemctl --failed` empty · `dig +dnssec +adflag dnanu.de @9.9.9.9` (AD bit set) · `delv dnanu.de`.
+`zpool status` · `wg show` (handshakes < 2 min old for active peers, peers at 10.0.80.x, 97 peers listed, **P2P routes work**) · `systemctl status kea-dhcp4-server kea-dhcp6-server` · Kea leases: arch=`10.0.70.3`, dumitru iPhone=`10.0.70.10`, Xbox=`10.0.60.x` (IoT), Samsung TV=`10.0.60.x` (IoT) · `dig @10.0.10.2 mail.dnanu.de` (→10.0.10.11) · `dig mail.dnanu.de @1.1.1.1` (→home IP) · `dig vpn.dnanu.de @1.1.1.1` (→home IP) · `dig @fd10::2 cloud.nanulab.de` → 10.0.30.2 · cellular with tunnel up: `dig cloud.nanulab.de` → 10.0.30.2 and `curl -kI https://cloud.nanulab.de` works · `curl -kI https://profile.dnanu.de/admin/` (admin sees 7 QRs) · nginx ACL: guest IP → 403 on all vhosts · `curl -k https://profile.nanulab.de` → **404** (catch-all) · AdGuard query log shows 10.0.80.x sources labeled · `swaks --to hey@dnanu.de --server <home-ip>` from outside · send via iOS → confirm delivery · LAN: fresh guest lease ∈ .90.100-.200 · **zone isolation: guest→container denied, IoT→cloud denied, frontend→backend allowed** · torrent IP-leak test in qBittorrent · `restic check` · lid-close test · `systemctl --failed` empty · `dig +dnssec +adflag dnanu.de @9.9.9.9` (AD bit set) · `delv dnanu.de`.
 
 ## 14. Update Policy
 

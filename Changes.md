@@ -1,5 +1,21 @@
 # Changes.md — temporary session log (wiped into OpenCode.md at end of session)
 
+## 2026-08-08 — Architecture ruling: all services as NixOS containers + /16 zone scheme
+
+### Major architecture change (human-driven, reverses native-modules-on-host)
+- **All services → NixOS containers** (`containers.<name>`, systemd-nspawn). Host = bare core (ZFS, kernel WG, container runtime). Docker/oci-containers model **retired**.
+- **Network zones (/16):** `.10` system/ops (nginx, mail, AdGuard, Kea, Authelia, ddclient, cloudflared, restic, Glance, Beszel), `.20` backend-cloud (Postgres, Redis, MariaDB, Collabora), `.30` frontend-cloud (Nextcloud, Immich, Vaultwarden, HA), `.40` backend-media (arrs, Prowlarr), `.50` frontend-media (Jellyfin, Seerr, Mixarr, Shelfarr), `.60` IoT, `.70` users LAN, `.80` users VPN (WG v5), `.90` guests.
+- **Real zone isolation:** nftables default-deny between zones; explicit allows. Backends + DBs host-side (no LAN IP, unreachable from user devices). Only nginx + frontends get macvlan. **nginx = single ingress.**
+- **WG v5:** clients 10.0.10.x → 10.0.80.x; AllowedIPs → 10.0.0.0/16; server-routed P2P; QR re-render.
+- **User devices** → 10.0.70.x (v4 blocks mirrored); TV/Air/Xbox → IoT (.60); guests → .90.
+- slskd **confirmed in** stack (was optional).
+- Router LAN → /16 (1% manual).
+- Docs updated: OpenCode.md vision, §1 rules, §3.1/3.2/3.3, §9 service map (zones), §13 verification.
+- **Formal build plan: architect** (after merge/restart when new agents are live).
+
+---
+(previous session history preserved below)
+
 ## 2026-08-08 — Second definition pass (round 2 audit)
 
 ### Decisions locked (human answers)
