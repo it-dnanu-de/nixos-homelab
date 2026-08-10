@@ -38,7 +38,7 @@ This repo ships an opencode configuration so AI agents work the way the project 
 | Piece | Where | What it does |
 |---|---|---|
 | Main config | `opencode.json` | instructions, MCP servers, references, permissions |
-| Agents | `.opencode/agent/` | JOAT (orchestrator), architect, builder, reviewer, verifier, deployer, troubleshooter — each with a default model, overridable per task |
+| Agents | `.opencode/agent/` | JOAT (orchestrator), architect, builder, reviewer, verifier, deployer, troubleshooter, designer — each with a default model, overridable per task |
 | Commands | `.opencode/command/` | `/init`, `/task`, `/branch`, `/commit`, `/pr`, `/review`, `/deploy`, `/verify`, `/status`, `/update`, `/secrets` |
 | Skills | `.opencode/skills/` | nixos-flake, sops-secrets, mail-stack, zfs-disko, deployment, verification, security-hardening, git-workflow |
 | References | `@nixpkgs @snm @disko @sops-nix @nixos-anywhere @vpn-confinement` | pinned-channel verification sources |

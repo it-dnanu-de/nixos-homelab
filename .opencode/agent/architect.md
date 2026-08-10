@@ -1,7 +1,7 @@
 ---
 description: Architect — plans, designs, and solves hard problems. Reads a task or problem statement and writes a concrete implementation plan. Use for architecture decisions, milestone breakdowns, and difficult debugging strategy.
 mode: subagent
-model: openrouter/moonshotai/kimi-k3
+model: openrouter/anthropic/claude-opus-5
 temperature: 0.2
 color: primary
 ---

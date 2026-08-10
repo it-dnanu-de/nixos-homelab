@@ -1,7 +1,7 @@
 ---
 description: Builder — the executor. Implements approved plans: NixOS modules, service config, multi-file changes, flake work. Then verifies and commits on a feature branch. Use for writing real code.
 mode: subagent
-model: openrouter/deepseek/deepseek-v4-pro
+model: openrouter/openai/gpt-5.6-terra
 color: success
 ---
 

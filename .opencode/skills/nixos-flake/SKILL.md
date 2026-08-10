@@ -41,12 +41,12 @@ modules/{networking,services,system}/*.nix
 8. Restic + Beszel + Glance + verification suite ⬜
 
 ## Agent routing (this harness)
-- Planning / architecture / hard debugging -> `architect` (Kimi K3)
-- Writing modules / services / flake -> `builder` (DeepSeek V4 Pro)
+- Planning / architecture / hard debugging -> `architect` (Claude Opus 5)
+- Writing modules / services / flake -> `builder` (GPT-5.6 Terra)
 - Verifying an option/package against pinned 26.05 -> `verifier` (DeepSeek V4 Flash)
 - Security audit (DNSSEC, TLS, firewall, sops) -> `reviewer` (Kimi K3)
 - Rebuild/deploy on 10.0.0.2 -> `deployer` (DeepSeek V4 Pro)
-- Debugging breakage -> `troubleshooter` (GLM 5.2)
+- Debugging breakage -> `troubleshooter` (Qwen 3.8 Max)
 
 ## Session start
 Type `Init` (command/init.md) once per session. It probes the environment, asks the human setup questions, and drives the build order by routing to the agents above.

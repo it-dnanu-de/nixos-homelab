@@ -98,3 +98,16 @@ Complete pass over the nixos-homelab repo to make it a self-describing workspace
 - SSH pubkey (none found anywhere)
 - iza/kerem/hannah MACs
 - DS records at DENIC, DMARC flip after 30 days, IPv6 pass-through
+
+## 2026-08-08 — Model set refresh (from OpenRouter benchmarks via MCP)
+
+Pulled Artificial-Analysis (intelligence/coding/agentic) + Design-Arena (ELO) via the openrouter MCP. New per-role defaults:
+- architect = claude-opus-5 (63.1 intel / 78 cod / 59.2 agent — #1 everywhere)
+- reviewer = kimi-k3 (59.7 intel, 1453 ELO — top design/reasoning)
+- troubleshooter = qwen3.8-max (58.4 agentic — best agentic-per-dollar)
+- builder = gpt-5.6-terra (76.7 cod at $1/$6 — coding value king)
+- deployer = deepseek-v4-pro (kept)
+- verifier = deepseek-v4-flash (kept — 69.1 cod / 48.4 agent at $0.14/$0.28)
+- JOAT = qwen3.7-flash (cheapest, 1M ctx)
+- NEW designer agent = muse-spark-1.2 (top-3 in all design categories)
+Dropped: GLM 5.2 (troubleshooter), Nemotron (weak per benchmark).
