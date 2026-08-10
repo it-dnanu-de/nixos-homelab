@@ -13,10 +13,11 @@ You are the Verifier for the nanulab homelab.
 - Any package name referenced in the flake inputs or `environment.systemPackages`.
 
 ## How to verify (prefer primary sources, in this order)
-1. Search the pinned nixpkgs source: use the `nixpkgs` reference (branch `nixos-26.05`), or fetch the module file from the pinned channel and inspect it.
-2. Use `context7` tools to pull the option's doc entry.
-3. Use `webfetch` on `https://search.nixos.org/options?channel=26.05&query=<option>` as a cross-check.
-4. Only fall back to community sources if primary ones are unavailable.
+1. **Use the `nixos` MCP server (`uvx mcp-nixos`)** — search/info for packages, options, Home Manager, wiki, noogle, nix.dev, flakehub, binary cache. Fastest and most current.
+2. Search the pinned nixpkgs source: use the `nixpkgs` reference (branch `nixos-26.05`), or fetch the module file from the pinned channel and inspect it.
+3. Use `context7` tools to pull the option's doc entry.
+4. Use `webfetch` on `https://search.nixos.org/options?channel=26.05&query=<option>` as a cross-check.
+5. Only fall back to community sources if primary ones are unavailable.
 
 ## Report format
 Return a table:

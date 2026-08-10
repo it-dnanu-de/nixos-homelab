@@ -25,7 +25,7 @@ modules/{networking,services,system}/*.nix
 ```
 
 ## Verify-before-write
-- Every option you write must exist in the pinned `nixos-26.05` channel. Use the `verifier` agent, the `nixpkgs` reference (`@nixpkgs`), or `context7`.
+- Every option you write must exist in the pinned `nixos-26.05` channel. **Primary tool: the `nixos` MCP server (`uvx mcp-nixos`)** — search/info packages, options, Home Manager, wiki, noogle, nix.dev. Cross-check with the `verifier` agent, the `nixpkgs` reference (`@nixpkgs`), or `context7`.
 - Abstract paths `/fast` and `/slow` only via `settings.nix` so prod migration is a new disko.nix + hardware config.
 - ZFS: `networking.hostId = "<8 hex>";` is mandatory; `boot.kernelPackages = config.boot.zfs.package.latestCompatibleLinuxPackages;`.
 - Dell test box quirks: `services.logind.lidSwitch = "ignore";` and ARC capped via `boot.kernelParams = [ "zfs.zfs_arc_max=1073741824" ];` (param from settings.nix).

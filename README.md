@@ -45,7 +45,7 @@ This repo ships an opencode configuration so AI agents work the way the project 
 
 **Workflow:** feature branch → work → PR → human merges → server pulls `main` → deploy. `main` is protected and always deployable.
 
-MCP servers: **context7** (option lookup), **ssh-homelab** (`@fangjunjie/ssh-mcp-server` → 10.0.0.2, password via the `HOMELAB_SSH_PASSWORD` env var — see Memory.md), **playwright** (browser-verifying UIs). The two `npx`-based ones need `nodejs`/`npm` installed; the remote ones work without.
+MCP servers: **context7** (option lookup), **nixos** (`uvx mcp-nixos` — search 130K+ packages, 23K+ options, Home Manager, NixOS wiki, noogle, nix.dev, flakehub, binary cache; the primary verify-anything source), **ssh-homelab** (`@fangjunjie/ssh-mcp-server` → 10.0.0.2, password via the `HOMELAB_SSH_PASSWORD` env var — see Memory.md), **playwright** (browser-verifying UIs). The `uvx`/`npx`-based ones need `uvx`/`nodejs` installed; the remote ones work without.
 
 ## Starting a session — `Init`
 
