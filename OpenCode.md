@@ -49,7 +49,20 @@
 - **Web UI once, persists forever:** DB-level state (download clients, indexers, root folders) lives in the container's `/var/lib` or `/fast/containers/<app>` — configured once via web UI, persists across rebuild/reboot.
 - The web-UI-once step is part of the §12 "1% manual" list.
 
-**v1 in-scope (all media types):** movies + TV (Seerr → Radarr/Sonarr → Prowlarr → qBittorrent/SABnzbd → Jellyfin → LiquidFin), music (Mixarr → Lidarr → Prowlarr → downloaders → Jellyfin → LiquidFin), audiobooks (manual → Jellyfin → LiquidFin), books (Shelfarr → Livrarr/Readarr → Prowlarr → downloaders → Jellyfin → LiquidFin). Plus Authentik (IdP + self-service signup), Home Assistant (10 declared users), Glance dashboard, Beszel, restic→B2. Hugo site is **v2**.
+**Cloud = self-hosted iCloud (2026-08-08) — Nextcloud is the ENTIRE cloud.** One login portal (Authentik) → invite → **profile install** (native iOS/Android clients) → **iCloud-style home launcher** showing all apps. Nextcloud replaces Immich + Vaultwarden entirely:
+
+| Service | Role | Notes |
+|---|---|---|
+| Nextcloud **Files** (WebDAV) | Drive | iOS Files app (WebDAV) / desktop web |
+| Nextcloud **Mail** | Mail | iOS Mail app (IMAP/SMTP) / desktop web |
+| Nextcloud **Calendar+Tasks** | Calendar | iOS Calendar app (CalDAV) / desktop web |
+| Nextcloud **Contacts** | Contacts | iOS Contacts app (CardDAV) / desktop web |
+| Nextcloud **Memories** | Photos | ⚠️ **not in nixpkgs — package via `fetchNextcloudApp`** (v8.1.0, github.com/pulsejet/memories). Nextcloud app for uploads/management. **Replaces Immich.** |
+| Nextcloud **Passwords** | Passwords | ⚠️ **not in nixpkgs — package via `fetchNextcloudApp`** (nightly 2026.8.20, git.mdns.eu). **Replaces Vaultwarden.** |
+| Nextcloud **Notes** | Notes | ✅ packaged (`notes`) |
+| Nextcloud **Talk** | Chat | ✅ packaged (`spreed`) but **TALK REVISITED (2026-08-08)** — calls need TURN server + ports (3478/5349) = violates zero-port rule; decision pending: text-only vs full |
+
+**Mobile (iOS):** native Mail/Calendar/Contacts/Files apps connect via IMAP/CalDAV/CardDAV/WebDAV (no mobileconfig — native config). Nextcloud app handles Photos (Memories)/Passwords/Notes/Talk. **Desktop:** Nextcloud web apps for all. **The iCloud-style home launcher** (app tile grid after Authentik login) is a separate surface from Glance (admin status dashboard) — user-facing apps only. `fetchNextcloudApp` = one small expr per app (url+sha512) — Memories + Passwords are easy to add, verified on the app store.
 
 **Users — single source of truth (2026-08-08):** `users.nix` is the single source for ALL services. Each user profile carries: tier (admin/user/family), first/last name → **username = `first.last`** (e.g. `dumitru.nanu`), email (`<username>@dnanu.de`), timezone, device MACs, and per-service provisioning (mail, nextcloud, vault, HA, jellyfin). Every service module reads from `users.nix` — one place edits a user. **11 mailboxes** (hey@, admin@, + 9 family users), separate mailboxes per user, current alias set (hey@ 8 aliases + admin@ 5) kept. **All 10 users provisioned on everything**; no per-user opt-out — "mail is not user-choice". **`first.last` rename is a dedicated milestone** (2026-08-08).
 
@@ -57,9 +70,9 @@
 
 **Memory layer (2026-08-08) — LIVE:** **engram v1.20.0** (single Go binary + SQLite, no Docker/Postgres/Node) installed on the Arch dev machine and wired into opencode via `engram setup opencode` (plugin + MCP stdio, auto-start HTTP server). Seeded with 9 core project-knowledge entries (vision, architecture, auth, media stack, users, email rule, monitoring, models, open issues). Agents save + retrieve via `engram save`/`engram search` (FTS keyword recall) — token-minimizing: agents pull only what they need instead of loading Memory.md whole. DB: `~/.engram/engram.db`. *Upgrade path if vector RAG is wanted later: OpenRouter `nvidia/nemotron-3-embed-1b:free` embeddings (2048-dim, free, verified) + a vector store. Embeddings on OpenRouter: 33 models via `output_modalities=embeddings`; most need extra providers. Multimodal (verified via MCP): most agent models accept image/file input; verifier + deployer text-only; Muse Spark 1.2 most capable.*
 
-**Password model (2026-08-08):** one password per user, applied to all services. Set by the user (self-service via Authentik signup/reset) or via the admin+user helper flow — the plaintext is never visible to the admin. Hashes per-service format live in sops (`user_<name>_pass_<service>`); services that can't read hash files (Vaultwarden, Jellyfin, HA) get the password set via their provisioning API. Password reset via recovery email → Authentik.
+**Password model (2026-08-08):** one password per user, applied to all services. Set by the user (self-service via Authentik signup/reset) or via the admin+user helper flow — the plaintext is never visible to the admin. Hashes per-service format live in sops (`user_<name>_pass_<service>`); services that can't read hash files (Jellyfin, HA) get the password set via their provisioning API. Password reset via recovery email → Authentik.
 
-**Email rule (2026-08-08):** **no server-initiated ALERT emails** to hey@ (watchdog/cron). Transactional emails users trigger (Vaultwarden password reset, Nextcloud share notifications) stay via local postfix → Resend relay, From `app@dnanu.de`. Alerts surface on the **Glance dashboard** instead.
+**Email rule (2026-08-08):** **no server-initiated ALERT emails** to hey@ (watchdog/cron). Transactional emails users trigger (Nextcloud Passwords reset, Nextcloud share notifications) stay via local postfix → Resend relay, From `app@dnanu.de`. Alerts surface on the **Glance dashboard** instead.
 
 **Monitoring/alerting (2026-08-08):** no self-emails for alerts. **Glance** (`services.glance`, native 26.05) at `status.nanulab.de` (admin-only) = the status dashboard (service health + weather + RSS + service links). **Beszel** monitors everything (host + services + containers). `mail-queue-watch` stays but writes a **status file** that Glance reads (email part removed).
 
@@ -99,7 +112,7 @@
 
 **Migration contract:** the config references abstract paths `/fast` and `/slow` via `settings.nix` only. Moving to prod = new `hardware-configuration.nix`, new `disko.nix` (two pools, same mountpoints), bump `zfsArcMax`. Nothing else changes.
 
-Dell-specific: `services.logind.lidSwitch = "ignore"` (lid closed ≠ suspend — the battery is a free UPS). Immich machine learning **disabled** on this CPU.
+Dell-specific: `services.logind.lidSwitch = "ignore"` (lid closed ≠ suspend — the battery is a free UPS). (Immich dropped 2026-08-08 — photos via Nextcloud Memories.)
 
 ## 3. Network Architecture
 
@@ -111,7 +124,7 @@ Dell-specific: `services.logind.lidSwitch = "ignore"` (lid closed ≠ suspend �
   |---|---|---|---|
   | `10.0.10.0/24` | system/ops | nginx, mail, AdGuard, Kea, Authentik, ddclient, cloudflared, restic, Glance, Beszel | nginx + admin |
   | `10.0.20.0/24` | backend-cloud | PostgreSQL, Redis, MariaDB, Collabora | **host-side (no LAN IP)** |
-  | `10.0.30.0/24` | frontend-cloud | Nextcloud, Immich, Vaultwarden, HA | macvlan, via nginx |
+  | `10.0.30.0/24` | frontend-cloud | Nextcloud (the ENTIRE cloud: files/photos/passwords/notes/mail/cal/contacts), HA | macvlan, via nginx |
   | `10.0.40.0/24` | backend-media | Sonarr, Radarr, Lidarr, Readarr, Livrarr, Prowlarr | **host-side (no LAN IP)** |
   | `10.0.50.0/24` | frontend-media | Jellyfin, Seerr, Mixarr, Shelfarr | macvlan, via nginx |
   | `10.0.60.0/24` | IoT | IoT devices | isolated; only HA reaches it |
@@ -276,7 +289,7 @@ services.postfix = {
 
 ```
 /fast/user/hey/{work/{audio,video,images,literature,documents}/{apple,windows,linux},academic,downloads}
-/fast/immich            # Immich-managed, black box
+/fast/immich            # (dropped with Immich 2026-08-08 — photos move to Nextcloud Memories)
 /fast/mail              # Maildir
 /fast/backups/postgres  # nightly dumps, restic source
 /fast/containers        # bind-mounted /config dirs for the Docker arr/request containers
@@ -314,7 +327,7 @@ nixos-homelab/
 
 ## 7. Secrets Inventory (sops-nix)
 
-`cloudflare_api_token`, `cloudflare_account_token`, `cloudflared_tunnel_cred`, `resend_api_key`, `mail_hey`, `mail_admin`, `mail_<user>` (9 family mailboxes, one per user), `airvpn_wg_conf`, `b2_account_id`, `b2_account_key`, `restic_password`, `nextcloud_admin_pass`, `vaultwarden_admin_token`, `slskd_env` (`SLSKD_SLSK_USERNAME/PASSWORD`), `authentik_secret_key`, `authentik_postgres_password`, `user_<name>_pass_<service>` (per-user per-service hashes), `wireguard_server_private`, `wireguard_peer_<hostname>-vpn_private`, `wireguard_peer_<hostname>-vpn_psk` (97 peers × 2 = **194** WG keys). *(booklore_db_password removed 2026-08-08.)*
+`cloudflare_api_token`, `cloudflare_account_token`, `cloudflared_tunnel_cred`, `resend_api_key`, `mail_hey`, `mail_admin`, `mail_<user>` (9 family mailboxes, one per user), `airvpn_wg_conf`, `b2_account_id`, `b2_account_key`, `restic_password`, `nextcloud_admin_pass`, `slskd_env` (`SLSKD_SLSK_USERNAME/PASSWORD`), `authentik_secret_key`, `authentik_postgres_password`, `user_<name>_pass_<service>` (per-user per-service hashes), `wireguard_server_private`, `wireguard_peer_<hostname>-vpn_private`, `wireguard_peer_<hostname>-vpn_psk` (97 peers × 2 = **194** WG keys). *(booklore_db_password removed 2026-08-08; vaultwarden_admin_token removed 2026-08-08 — Vaultwarden dropped.)*
 
 ## 8. TLS
 
@@ -337,8 +350,8 @@ nixos-homelab/
 | Authentik | `nix-community/authentik-nix` flake (`services.authentik`) | `auth.dnanu.de` + `profile.dnanu.de` | `.10` system | ⬜ | IdP: self-service signup+invites, admin UI, OIDC SSO, blueprint-driven from users.nix; replaces Authelia |
 | Nextcloud | `services.nextcloud` | `cloud.nanulab.de` | `.30` frontend-cloud | ✅ | pg+redis; apps mail/calendar/contacts/richdocuments/files; 16G; RAM-tuned |
 | Collabora | `services.collabora-online` | `office.nanulab.de` | `.20` backend-cloud | ✅ | Nextcloud Office backend (host-side) |
-| Immich | `services.immich` | `photos.nanulab.de` | `.30` frontend-cloud | ✅ | `/fast/immich`; ML off on Dell |
-| Vaultwarden | `services.vaultwarden` | `vault.nanulab.de` | `.30` frontend-cloud | ✅ | SQLite; signups off; Argon2 token; SMTP via local postfix |
+| ~~Immich~~ | ~~`services.immich`~~ | — | 🗑 dropped 2026-08-08 | replaced by Nextcloud Memories (fetchNextcloudApp) |
+| ~~Vaultwarden~~ | ~~`services.vaultwarden`~~ | — | 🗑 dropped 2026-08-08 | replaced by Nextcloud Passwords (fetchNextcloudApp) |
 | PostgreSQL | `services.postgresql` | — | `.20` backend-cloud | ✅ | shared DB (nextcloud, immich) |
 | Redis | `services.redis` | — | `.20` backend-cloud | ✅ | shared cache |
 | Home Assistant | `services.home-assistant` | `home.nanulab.de` | `.30` frontend-cloud | ⬜ | half-declared: 10 users declared; trusted_proxies |
@@ -372,7 +385,7 @@ The `.mobileconfig` generator is **dropped** (2026-08-08 — iOS/Android users c
 
 - `services.postgresqlBackup` nightly: `nextcloud`, `immich` → `/fast/backups/postgres`.
 - Restic nightly at **02:00** (2026-08-08), source = ZFS snapshot (crash-consistent) + dumps:
-  - **Include:** `/fast` (Nextcloud files, Immich media + DB, Maildir, dumps, `/fast/containers`), `/var/lib` app state for every service in §9, `/etc/nixos`.
+  - **Include:** `/fast` (Nextcloud files + Memories, Maildir, dumps, `/fast/containers`), `/var/lib` app state for every service in §9, `/etc/nixos`.
   - **Exclude:** `/slow/shared-media`, `/slow/downloads`, caches.
 - `passwordFile` + `environmentFile` (B2 creds) from sops. **Retention: 7 daily / 4 weekly / 12 monthly** (confirmed 2026-08-08). B2 region decided at backup build.
 - **Restore drill** (documented, tested once): new machine → `nixos-anywhere` → `restic restore` → reboot → done.
@@ -382,7 +395,7 @@ The `.mobileconfig` generator is **dropped** (2026-08-08 — iOS/Android users c
 **On the human's machine (once):** generate age keypair (private → USB + password manager); generate mobile CA; clone repo; edit `settings.nix`; `sops secrets/secrets.yaml` to fill §7; commit via PR.
 **Install:** boot NixOS ISO on Dell (ethernet) → start sshd, set password → `nix run github:nix-community/nixos-anywhere -- --flake .#homelab --extra-files <dir-with-age-key> root@<ip>` → disko formats, installs, reboots.
 **Day-2 flow:** PR merges to `main` → server: `cd /etc/nixos && git pull origin main && nixos-rebuild switch --flake .#homelab`. Rollback = `nixos-rebuild switch --rollback` or boot menu.
-**1% manual (~45 min):** disable Speedport DHCPv4 (+DHCPv6 if UI allows); switch dumitru iPhone off manual `10.0.0.3` → DHCP (Kea reservation hands it `10.0.0.10`); verify UDP 51820 forward (done 2026-08-05); keep Speedport DHCP pointing at AdGuard + IPv6 enabled; **Speedport v6 pass-through** (fixes internet.nl IPv6 — §3.5); fill iza/kerem/hannah MACs in `users.nix`; re-scan ALL WG QRs post-deploy; distribute Authentik + mail passwords (or self-service signup); optional `rm /var/lib/AdGuardHome/leases.json`; Nextcloud admin + link Mail app to local IMAP; Jellyfin admin + libraries; Prowlarr indexers; connect managers to downloaders; Seerr↔Jellyfin; Vaultwarden admin; HA onboarding; Beszel agent key; **mail-tester.com + internet.nl after mail deploy (done 2026-08-07 — see §4.1); flip DMARC to `p=reject` after 30 clean days; publish DS records at registrar (both zones, §3.7, activates DANE).**
+**1% manual (~45 min):** disable Speedport DHCPv4 (+DHCPv6 if UI allows); switch dumitru iPhone off manual `10.0.0.3` → DHCP (Kea reservation hands it `10.0.0.10`); verify UDP 51820 forward (done 2026-08-05); keep Speedport DHCP pointing at AdGuard + IPv6 enabled; **Speedport v6 pass-through** (fixes internet.nl IPv6 — §3.5); fill iza/kerem/hannah MACs in `users.nix`; re-scan ALL WG QRs post-deploy; distribute Authentik + mail passwords (or self-service signup); optional `rm /var/lib/AdGuardHome/leases.json`; Nextcloud admin + link Mail app to local IMAP + install Memories/Passwords apps; Jellyfin admin + libraries; Prowlarr indexers; connect managers to downloaders; Seerr↔Jellyfin; HA onboarding; Beszel agent key; **mail-tester.com + internet.nl after mail deploy (done 2026-08-07 — see §4.1); flip DMARC to `p=reject` after 30 clean days; publish DS records at registrar (both zones, §3.7, activates DANE).**
 
 ## 13. Verification Suite (run after install / deploy)
 
@@ -399,7 +412,7 @@ Quarterly: `nix flake update` → build → test → switch. Rollback via boot m
 - IPTV
 - Headscale + headplane UI (both native, verified 26.05 — if declarative WG peer management ever becomes a burden; needs TCP 8443 forward, preauth keys or an OIDC IdP)
 - **Nextcloud Office powered by Euro-Office** (June 2026, ONLYOFFICE-based; not in nixpkgs — keep Collabora until it lands in a pinned channel; decision 2026-08-08)
-- **Installer project** (`install.sh` on live ISO): fork repo → create GitHub repo on user's account → interactive Q&A (users/accounts/emails/aliases/apps/disks/API tokens) → generate config + sops → print manual steps. Assumes same stack (Resend/CF/INWX/WG/SNM). **v2 feature** (build after v1 done + fork). *(Note: Nextcloud/Vaultwarden accounts persist in their DBs across reboot AND rebuild — installer only creates on first install.)*
+- **Installer project** (`install.sh` on live ISO): fork repo → create GitHub repo on user's account → interactive Q&A (users/accounts/emails/aliases/apps/disks/API tokens) → generate config + sops → print manual steps. Assumes same stack (Resend/CF/INWX/WG/SNM). **v2 feature** (build after v1 done + fork). *(Note: Nextcloud accounts persist in its DB across reboot AND rebuild — installer only creates on first install.)*
 - **Website/blog NOT in v2** — v2 documents how to add your own blog. Hugo site itself is a v2 item.
 - DANE TLSA active once DS published at DENIC (§3.7)
 
@@ -416,4 +429,4 @@ Quarterly: `nix flake update` → build → test → switch. Rollback via boot m
 - WireGuard: https://www.wireguard.com · headscale: https://github.com/juanfont/headscale · headplane: https://github.com/tale/headplane
 - Mail hardening RFCs: RFC 8460 (TLS-RPT), RFC 8461 (MTA-STS), RFC 6698 (DANE TLSA), RFC 7489 (DMARC), RFC 7208 (SPF), RFC 6376 (DKIM)
 - Rspamd: https://rspamd.com · SNM rspamd integration: https://nixos-mailserver.readthedocs.io/en/latest/
-- Resend API: https://resend.com/docs/api-reference/emails/send-email (transactional emails from Vaultwarden/Nextcloud; alerts are dashboard-only)
+- Resend API: https://resend.com/docs/api-reference/emails/send-email (transactional emails from Nextcloud; alerts are dashboard-only)

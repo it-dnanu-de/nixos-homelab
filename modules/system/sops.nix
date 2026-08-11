@@ -30,7 +30,6 @@
       b2_account_key = {};
       restic_password = {};
       nextcloud_admin_pass = {};
-      vaultwarden_admin_token = {};
       slskd_env = {};
       # Authelia authentication (OpenCode.md §7, plan §3)
       authelia_jwt = {

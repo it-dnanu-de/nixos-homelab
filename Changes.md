@@ -118,3 +118,20 @@ Dropped: GLM 5.2 (troubleshooter), Nemotron (weak per benchmark).
 - Ingest surface: OpenCode.md, README, AGENTS, Changes.md, Memory.md, TODO/, git history. Retrieve-on-demand to minimize context.
 - Multimodal confirmed via OpenRouter MCP list-models: Opus5/K3/Terra/Qwen3.8/Qwen3.7/Muse accept image input; verifier+deployer text-only; Muse Spark most capable. OpenRouter has ZERO embedding models (verified) -> local Ollama required for RAG.
 - OpenRouter MCP tools discovered: list-models, get-model, list-benchmarks, generate-image, transcribe-audio, generate-speech, get-credits, send-message.
+
+## 2026-08-08 — Memory layer LIVE: engram installed + wired into opencode
+
+- **engram v1.20.0** (single Go binary + SQLite, no Docker/Postgres/Node) installed on Arch dev machine
+- `engram setup opencode` → plugin at ~/.config/opencode/plugins/engram.ts + MCP stdio
+- **Connected** in `opencode mcp list` (engram ✓)
+- Seeded 9 core project-knowledge entries: vision, architecture, auth, media stack, users, email rule, monitoring, models, open issues
+- Agents now save + retrieve memory (FTS keyword) — token-minimizing, replaces loading Memory.md whole
+- DB: ~/.engram/engram.db (248K). Upgrade path to vector RAG: OpenRouter nemotron-3-embed-1b:free embeddings
+
+## 2026-08-08 — Cloud plan v2: Nextcloud = self-hosted iCloud (drop Immich + Vaultwarden)
+
+- **Nextcloud becomes the ENTIRE cloud** (2026-08-08). One Authentik login → invite → native iOS/Android clients (IMAP/CalDAV/CardDAV/WebDAV) → iCloud-style launcher (user-facing tiles, separate from Glance admin dashboard).
+- **Drop Immich + Vaultwarden** entirely. Photos → Nextcloud **Memories** (v8.1.0), Passwords → Nextcloud **Passwords** (nightly). Both NOT in nixpkgs — **package via `fetchNextcloudApp`** (1 small expr each, verified on app store). Notes → packaged. Talk (`spreed`) REVISITED — calls need TURN+ports, decision pending.
+- No mobileconfig — native iOS/Android apps connect directly.
+- Docs: OpenCode.md vision + service map + §7 secrets + §11 backups; TODO 06 rewritten; sops: vaultwarden_admin_token removed.
+- Cloudreve evaluated + rejected (duplicates Nextcloud; no CalDAV/CardDAV).

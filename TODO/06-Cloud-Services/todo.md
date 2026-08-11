@@ -1,46 +1,38 @@
-# TODO — 06 Cloud Services
+# TODO — 06 Cloud Services (self-hosted iCloud — Nextcloud is the ENTIRE cloud)
 
-**Status:** ✅ done (deployed gen 78, declarative fixes gen 81) · **Owner:** builder · **Modules:** `modules/services/{nextcloud,collabora,immich,vaultwarden}.nix`, `nginx-helpers.nix`
+**Status:** ~ rework (2026-08-08: Nextcloud becomes the whole cloud; Immich + Vaultwarden dropped) · **Owner:** builder + architect · **Modules:** `modules/services/nextcloud.nix` (+ fetchNextcloudApp packaging)
 
-> Build step 5 in OpenCode.md §12. All options/packages verified in pinned 26.05. RAM-heavy four on the Dell: Immich, Nextcloud+Collabora, Jellyfin.
+> **Nextcloud = the self-hosted iCloud (2026-08-08).** One Authentik login → invite → native iOS/Android clients (mail/cal/contacts/files via IMAP/CalDAV/CardDAV/WebDAV) → iCloud-style launcher. Drop Immich + Vaultwarden. Package Memories + Passwords via `fetchNextcloudApp`.
 
 ## Nextcloud (`services.nextcloud`) — `cloud.nanulab.de`
 - [x] Module + PostgreSQL + Redis auto-provisioned
-- [x] `extraApps`: mail, calendar, contacts, **richdocuments** (Nextcloud Office)
-- [x] `adminpassFile` from sops
-- [x] `maxUploadSize = "16G"` + PHP-FPM RAM-tuned (`pm=ondemand, max_children=8`)
-- [x] nginx user-tier vhost + ACL (merged on module's auto-vhost)
-- [x] CalDAV/CardDAV/WebDAV endpoints (for mobile profile)
-- [x] `postgresqlBackup` nightly → `/fast/backups/postgres`
-- [x] Declarative warning fixes: maintenance window 02:30, phone region DE, serverId, log_type=file, opcache buffer 32, default_language=en, default_locale=en_US
-- [ ] `defaultapp = "dashboard"` (change from `files`, 2026-08-08 ruling)
-- [x] **Nextcloud Office → Collabora** wired: richdocuments 10.3.0 + wopi_url=`https://office.nanulab.de` (occ oneshot, activate-config clean)
-- [ ] Nextcloud Mail app linked to local IMAP (1% manual: login → link `mail.dnanu.de:993` as hey@)
-- [ ] **Declarative account creation** — human requested (not built; solution design pending)
-- [ ] 2FA: skipped by human ruling (VPN-only); can add TOTP app later
+- [x] Declarative warning fixes (maintenance window, phone region, serverId, log_type, opcache, language/locale)
+- [x] RAM-tuned PHP-FPM (pm=ondemand, max_children=8)
+- [x] richdocuments (Office) + WOPI → office.nanulab.de
+- [x] maxUploadSize 16G
+- [ ] `defaultapp = "dashboard"` (iCloud-style landing, 2026-08-08)
+- [ ] **iCloud-style launcher** (app tile grid after login — user-facing only; separate from Glance admin dashboard)
 
-## Collabora Online (`services.collabora-online`) — `office.nanulab.de`
-- [x] Native module, port 9980, `ssl.enable=false` + `ssl.termination=true` (nginx terminates)
-- [x] WOPI allowlist scoped to `cloud.nanulab.de`
-- [x] Discovery endpoint verified (200, 39,938-byte XML)
-- [x] Nextcloud Office connected (richdocuments wopi_url)
+## Apps to install (the iCloud surface)
+- [x] Mail, Calendar, Contacts, richdocuments (already)
+- [ ] **Memories** (photos) — ⚠️ package via `fetchNextcloudApp` v8.1.0 (github.com/pulsejet/memories). **Replaces Immich.**
+- [ ] **Passwords** — ⚠️ package via `fetchNextcloudApp` (git.mdns.eu nightly). **Replaces Vaultwarden.**
+- [ ] **Notes** — ✅ packaged (`notes`)
+- [ ] **Talk** — ✅ packaged (`spreed`) — **REVISIT (2026-08-08)**: calls need TURN server + ports (3478/5349) = zero-port conflict. Decision pending: text-only vs full.
+- [ ] Tasks, Bookmarks, News (RSS), Cookbook — family apps (all packaged)
+- [ ] Verify `fetchNextcloudApp` packaging works for Memories/Passwords (one expr each)
 
-## Immich (`services.immich`) — `photos.nanulab.de`
-- [x] `mediaLocation = /fast/immich`, ML **disabled** (Dell CPU)
-- [x] PostgreSQL (pgvector+vchord) + Redis auto-provisioned, nightly dump
-- [x] `client_max_body_size 500M`
-- [ ] Admin account creation (1% manual web UI)
+## Dropped (2026-08-08)
+- 🗑 **Immich** → replaced by Nextcloud Memories
+- 🗑 **Vaultwarden** → replaced by Nextcloud Passwords
+- 🗑 mobileconfig → native iOS/Android clients connect directly (IMAP/CalDAV/CardDAV/WebDAV)
 
-## Vaultwarden (`services.vaultwarden`) — `vault.nanulab.de`
-- [x] SQLite, `SIGNUPS_ALLOWED=false`, WebSocket endpoints
-- [x] `ADMIN_TOKEN` = **Argon2id PHC** in sops (fixes plaintext warning)
-- [x] Admin-page settings declared as env config: SMTP via local postfix :25 (loopback relay → Resend), `ENABLE_PUSH_NOTIFICATION=false`, DOMAIN
-- [x] nginx vhost + user ACL
-- [ ] Admin portal login + any final tweaks (1% manual)
+## Native client config (mobile/desktop)
+- [ ] iOS: Mail (IMAP/SMTP), Calendar (CalDAV), Contacts (CardDAV), Files (WebDAV) + Nextcloud app (Memories/Passwords/Notes/Talk)
+- [ ] Desktop: Nextcloud web apps (Files/Mail/Calendar/Contacts/Memories/Passwords/Notes/Talk)
+- [ ] Document the exact per-platform setup on the launcher/profile page
 
 ## Shared
-- [x] nginx-helpers.nix refactor (ACL + mkVhost shared)
-- [x] All 4 vhosts live + verified
-- [ ] Add all to restic include (`/var/lib` state) — step 8
-- [ ] `media` group for services that touch /fast (with §5 file-structure approval)
-- [ ] Declarative file structure §5 — **printed, awaiting human approval**
+- [ ] nginx user-tier vhost (frontend-cloud zone .30)
+- [ ] postgresqlBackup nightly → /fast/backups/postgres
+- [ ] restic include `/fast` (Nextcloud files + Memories)
