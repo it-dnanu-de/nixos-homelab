@@ -151,3 +151,9 @@ Dropped: GLM 5.2 (troubleshooter), Nemotron (weak per benchmark).
 - **Everything else stays native NixOS containers** — Jellyfin 10.11.11 + Sonarr/Radarr/Lidarr/Prowlarr are CURRENT in pinned 26.05 (verified), so no benefit to containerizing them.
 - Nextcloud AIO = mastercontainer + postgres + redis + apache + eurooffice (+ optional talk/collab). Declared via Nix (pinned images, sops env), not compose.
 - Docs: container model amended, cloud table (EuroOffice), service map (Nextcloud=podman, Collabora dropped), backlog. Removed stale Vaultwarden refs.
+
+## 2026-08-12 — Corrected: Livrarr/Shelfarr/Mixarr are NOT NixOS modules (podman containers)
+
+- Verified against pinned 26.05: only Readarr/Sonarr/Radarr/Lidarr/Prowlarr/Seerr have native modules+packages.
+- Livrarr, Shelfarr, Mixarr have NO nixos module AND NO package — they must run as podman containers (GitHub-release images).
+- Container model updated: 3 tiers — (1) NixOS modules in NixOS containers, (2) podman for Nextcloud AIO+EuroOffice, (3) podman for Livrarr/Shelfarr/Mixarr.

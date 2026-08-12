@@ -32,20 +32,20 @@
 | Movies manager | **Radarr** | backend-media `.40` |
 | TV manager | **Sonarr** | backend-media `.40` |
 | Music manager | **Lidarr** | backend-media `.40` |
-| Books/audiobooks manager | **Livrarr** | backend-media `.40` |
-| Books arr | **Readarr** (pinned + rreading-glasses mirror) | backend-media `.40` |
-| Requests (movies/TV) | **Seerr** | frontend-media `.50` |
-| Requests (music) | **Mixarr** | frontend-media `.50` |
-| Requests (books/audiobooks) | **Shelfarr** | frontend-media `.50` |
+| Books/audiobooks manager | **Livrarr** (podman — no Nix module) | backend-media `.40` |
+| Books arr | **Readarr** (native NixOS module, pinned + rreading-glasses mirror) | backend-media `.40` |
+| Requests (movies/TV) | **Seerr** (native NixOS module) | frontend-media `.50` |
+| Requests (music) | **Mixarr** (podman — no Nix module) | frontend-media `.50` |
+| Requests (books/audiobooks) | **Shelfarr** (podman — no Nix module) | frontend-media `.50` |
 | Downloaders | **qBittorrent + SABnzbd + slskd** (VPN-Confinement netns, all confirmed) | `.10` system (VPN-isolated) |
 | Audiobooks | manual (no arr; drop into Jellyfin audiobook library) | — |
 | Podcasts / comics / manga | **dropped** | — |
 
-**Container model (2026-08-08, amended 2026-08-12):** services run as **NixOS containers** (`containers.<name>`, systemd-nspawn) EXCEPT **Nextcloud, which runs as a declarative podman container** (2026-08-12 ruling). The pinned nixpkgs Nextcloud module is 2 majors behind (32 vs 34 upstream) and cannot run **EuroOffice / Memories / Passwords** (not packaged). Nextcloud AIO (podman) is the only path to EuroOffice + NC34. Everything else stays native NixOS containers (Jellyfin + arrs are current in 26.05 — no benefit to containerizing). Declared via `virtualisation.oci-containers.backend = "podman"` + `containers` (pinned images, sops secrets). See the Cloud section for the Nextcloud podman details.
+**Container model (2026-08-08, amended 2026-08-12):** most services run as **NixOS containers** (`containers.<name>`, systemd-nspawn) with their native modules inside. **Exceptions that run as podman containers** (declared via `virtualisation.oci-containers.backend = "podman"`, pinned images, sops secrets): **Nextcloud AIO** (NC module 2 majors behind; EuroOffice/Memories/Passwords only exist as AIO containers) and **Livrarr / Shelfarr / Mixarr** (have NO NixOS module or package in 26.05 — they run from their GitHub-release container images). Everything else stays native NixOS containers (Jellyfin + Sonarr/Radarr/Lidarr/Readarr/Prowlarr/Seerr are current in 26.05 — no benefit to containerizing).
 
 **Container declarability model:**
-- **NixOS containers** (`containers.<name>`, systemd-nspawn) for most services: fully declarative, own `services.*` config, storage, network zone. No Docker.
-- **Nextcloud = podman container** (declarative via oci-containers backend=podman, pinned image, sops env). Runs Nextcloud AIO + EuroOffice DocumentServer (`ghcr.io/euro-office/documentserver`).
+- **NixOS containers** (`containers.<name>`, systemd-nspawn) for: Nginx, AdGuard, Kea, Mail (SNM), Authentik, Jellyfin, HA, Glance, Beszel, Restic, Sonarr, Radarr, Lidarr, Readarr, Prowlarr, Seerr, downloaders (qBit/SAB/slskd + VPN netns).
+- **Podman containers** (oci-containers backend=podman) for: **Nextcloud AIO** + sub-containers (postgres/redis/apache/**eurooffice**), **Livrarr**, **Shelfarr**, **Mixarr**.
 - **Users declarative:** per-service accounts provisioned via occ/CLI oneshots at first boot (idempotent), from `users.nix`.
 - **Web UI once, persists forever:** DB-level state lives in the container's `/var/lib` or `/fast` volume — configured once via web UI, persists across rebuild/reboot.
 - The web-UI-once step is part of the §12 "1% manual" list.
