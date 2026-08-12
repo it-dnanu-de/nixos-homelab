@@ -34,8 +34,9 @@
   zfsArcMax = "1073741824";      # 1 GiB on the Dell's 6 GB; bump to 8–16 GiB on prod
 
   paths = {
-    fast = "/fast";              # SSD pool (or dataset) — apps, databases, mail
-    slow = "/slow";              # HDD pool — media, downloads
+    work = "/work";              # NVMe pool (or dataset) — active creative projects
+    fast = "/fast";              # SSD pool (or dataset) — apps, user cloud, mail, backups
+    slow = "/slow";              # HDD pool — media library, downloads
   };
 
   vpn = {

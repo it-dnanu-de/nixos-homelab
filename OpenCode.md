@@ -108,9 +108,20 @@
 | Phase | Machine | CPU/RAM | Disk |
 |-------|---------|---------|------|
 | Test | Dell Latitude E5520 | i5-2520M / 6GB DDR3 | 250GB SSD, single-disk ZFS |
-| Prod | Future build | 12th-gen i5 / 64GB | 1TB NVMe boot, 2×4TB SSD RAID1 (`fast`), 2×8TB HDD RAID1 (`slow`) |
+| Prod | Minisforum MS-01 (i5-12600H/i9-12900H barebone) | 32GB DDR5 | **3 pools** (2026-08-12): 250GB NVMe boot · 2×1TB NVMe RAID1 (`/work`) · 2×2TB SSD RAID1 (`/fast`) · 2×4TB HDD RAID1 (`/slow` in TerraMaster D4-320 USB DAS) |
 
-**Migration contract:** the config references abstract paths `/fast` and `/slow` via `settings.nix` only. Moving to prod = new `hardware-configuration.nix`, new `disko.nix` (two pools, same mountpoints), bump `zfsArcMax`. Nothing else changes.
+**Prod hardware (2026-08-12, shopping list ≈€2,415–2,465):** Minisforum MS-01 barebone · Corsair 32GB DDR5 SODIMM · WD Blue SN570 250GB NVMe (boot) · 2× Crucial E100 1TB NVMe (`/work`) · 2× Crucial BX500 2TB SSD (`/fast`, 2.5" bays) · 2× WD RE 4TB HDD (`/slow`, via TerraMaster D4-320 USB 3.2 Gen2 DAS).
+
+**Pools (all RAID1):**
+| Pool | Drives | Mount | Contents |
+|---|---|---|---|
+| `work` | 2×1TB NVMe (M.2) | `/work` | active creative projects, raw media |
+| `fast` | 2×2TB SSD (2.5") | `/fast` | apps, Nextcloud user data, mail, backups |
+| `slow` | 2×4TB HDD (USB DAS) | `/slow` | media library, downloads |
+
+**Migration contract:** the config references abstract paths `/work`, `/fast`, `/slow` via `settings.nix` only. Moving to prod = new `hardware-configuration.nix`, new `disko.nix` (three pools, same mountpoints), bump `zfsArcMax`. Nothing else changes.
+
+Dell test box: single disk → `rpool/{work,fast,slow}` datasets mirror the 3 prod pools (same mountpoints), so the migration contract holds on the test box too.
 
 Dell-specific: `services.logind.lidSwitch = "ignore"` (lid closed ≠ suspend — the battery is a free UPS). (Immich dropped 2026-08-08 — photos via Nextcloud Memories.)
 
@@ -281,24 +292,35 @@ services.postfix = {
 ## 5. Storage (ZFS + disko)
 
 - `disko` targets `/dev/sda` (test) — human verifies device path at install. GPT: 1G ESP `/boot` + ZFS root pool.
-- **Dell mirrors prod (2026-08-08 ruling):** the Dell is reformatted to have real `/fast` and `/slow` as separate ZFS datasets (different recordsize/compression, mimicking the future pools) so the prod switch is drop-in. Prod: pools `fast` (SSD mirror) + `slow` (HDD mirror), same mountpoints.
+- **Dell mirrors prod (2026-08-12):** the Dell is reformatted to have `/work`, `/fast`, `/slow` as separate ZFS datasets on the single disk (`rpool/{work,fast,slow}`, different recordsize/compression) mimicking the 3 prod pools, so the prod switch is drop-in. Prod: pools `work` (NVMe mirror) + `fast` (SSD mirror) + `slow` (HDD mirror), same mountpoints.
 - **Prod switch contract:** change only `disko.nix` + `hardware-configuration.nix` + `zfsArcMax` in settings.nix. Everything else (services, network, paths) identical.
 - **Mandatory:** `networking.hostId = "<8 hex>";` (generate once, keep forever) and `boot.kernelPackages = config.boot.zfs.package.latestCompatibleLinuxPackages;`
 - ARC cap: `boot.kernelParams = [ "zfs.zfs_arc_max=1073741824" ];` on Dell; `settings.nix` parameter.
-- **Directory layout is declarative** (`modules/system/storage-layout.nix`, systemd.tmpfiles, `root:media 2775` setgid):
+- **Directory layout v2 is declarative** (`modules/system/storage-layout.nix`, systemd.tmpfiles, `root:media 2775` setgid; lowercase-kebab-case, multi-OS safe):
 
 ```
-/fast/user/hey/{work/{audio,video,images,literature,documents}/{apple,windows,linux},academic,downloads}
-/fast/immich            # (dropped with Immich 2026-08-08 — photos move to Nextcloud Memories)
-/fast/mail              # Maildir
-/fast/backups/postgres  # nightly dumps, restic source
-/fast/containers        # bind-mounted /config dirs for the Docker arr/request containers
-/slow/shared-media/video/{shows,movies}
-/slow/shared-media/audio/{music,audiobooks}
-/slow/shared-media/literature/{books}
-/slow/downloads/{qbittorrent,sabnzbd,slskd}   # *arr hardlink source
+/work/shared/                              # ACTIVE creative work (NVMe)
+├── library/{video,music,sfx}              # reusable assets (LUTs, samples, fonts)
+├── templates/                             # project skeletons per discipline
+└── projects/<ProjectName>/
+    ├── 00_admin/ 01_docs/ 02_assets/
+    ├── 03_media/{raw,processed}           # raw = read-only source of truth
+    ├── 04_project-files/{resolve,premiere,reaper,ableton,...}   # per-app session files
+    └── 05_exports/{preview,interchange,final}
+
+/fast/                                     # apps + user cloud (SSD)
+├── users/<user>/{notes,photos,documents,paperless}   # filesystem = user files; Nextcloud data dir + Memories index point here
+├── mail/                                  # Maildir (SNM)
+├── backups/postgres/                      # nightly dumps, restic source
+└── containers/                            # NixOS container state
+
+/slow/                                     # media LIBRARY (HDD)
+├── shared-media/{video/{shows,movies},audio/{music,audiobooks},literature/{books}}
+└── downloads/{qbittorrent,sabnzbd,slskd}  # *arr hardlink source
 ```
-All media services + nextcloud + immich get supplementary group `media` (set via `SupplementaryGroups` on their systemd units). Podcasts + comics/manga dirs removed (dropped from scope, 2026-08-08).
+
+**Storage policy (no archive tier):** Restic provides version history. Finished project → delete `03_media/processed/` (regenerable proxies), move `03_media/raw/` to cold storage (USB), keep the rest (docs/project-files/exports are tiny). Client access: **WebDAV only** (Nextcloud for user files, creative tree via WebDAV — 2026-08-12).
+All media services + nextcloud get supplementary group `media` (set via `SupplementaryGroups` on their systemd units). Podcasts + comics/manga dirs removed (dropped from scope). Old `user/hey`, `immich`, per-OS subdirs removed (2026-08-12).
 
 ## 6. Repo Structure
 

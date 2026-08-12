@@ -135,3 +135,12 @@ Dropped: GLM 5.2 (troubleshooter), Nemotron (weak per benchmark).
 - No mobileconfig — native iOS/Android apps connect directly.
 - Docs: OpenCode.md vision + service map + §7 secrets + §11 backups; TODO 06 rewritten; sops: vaultwarden_admin_token removed.
 - Cloudreve evaluated + rejected (duplicates Nextcloud; no CalDAV/CardDAV).
+
+## 2026-08-12 — 3-pool storage (work/fast/slow) + directory structure v2
+
+- **Prod hardware locked** (2026-08-12, ~€2,415): Minisforum MS-01 + 32GB DDR5 + 3 pools: /work=2×1TB NVMe RAID1, /fast=2×2TB SSD RAID1, /slow=2×4TB HDD RAID1 (TerraMaster USB DAS). Boot = 250GB NVMe.
+- **Directory structure v2** (from Claude + human): /work/shared/{library,templates,projects/<name>/{00-05_}} for active creative work (raw media = source of truth, per-app project-files, exports/interchange); /fast/users/<user>/{notes,photos,documents,paperless} (filesystem = user files; Nextcloud data + Memories index here); /slow media library + downloads. Removed: user/hey, immich, per-OS subdirs, archive tier.
+- **Storage policy:** no archive — Restic = version history; finished project → delete processed/, move raw/ to cold storage.
+- **Client access: WebDAV only** (2026-08-12).
+- Dell test box: rpool/{work,fast,slow} datasets mirror the 3 pools (same mountpoints).
+- Updated: OpenCode.md §2/§5, settings.nix paths (+/work), storage-layout.nix, disko.nix (work dataset). No system rebuild.
