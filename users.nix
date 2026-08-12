@@ -2,29 +2,29 @@
 # Consumed by: kea.nix (DHCP host reservations), adguard.nix (persistent clients),
 # wireguard.nix (WG peers + QR renderer), nginx.nix (ACL allowlists).
 #
-# v4 (2026-08-06): [user]1-9 naming (base = [user], no number = Authelia login),
-# full 10-slot-per-user block pre-provision. admin block 0-9 with roles.
+# v5 (2026-08-12): [user]1-9 naming (base = [user], no number = username), full
+# 10-slot-per-user block pre-provision. /16 zones (§3.1): users LAN .70, users VPN .80.
 # blocks: admin=0, dumitru=10, adela=20, tiberiu=30, david=40, ramona=50,
 # tibisor=60, iza=70, kerem=80, hannah=90.
 #
 # The human only edits `hostname` + `mac` per device. IPs are DERIVED from
 # the user's block offset + device index (1-based). All helpers use pure builtins.
 #
-# IP allocation:
-#   admin   → LAN 10.0.0.0-9   · VPN 10.0.10.0-9   (admin/admin1/admin2 = infra/router/server)
-#   dumitru → LAN 10.0.0.10-19 · VPN 10.0.10.10-19
-#   adela   → LAN 10.0.0.20-29 · VPN 10.0.10.20-29
-#   tiberiu → LAN 10.0.0.30-39 · VPN 10.0.10.30-39
-#   david   → LAN 10.0.0.40-49 · VPN 10.0.10.40-49
-#   ramona  → LAN 10.0.0.50-59 · VPN 10.0.10.50-59
-#   tibisor → LAN 10.0.0.60-69 · VPN 10.0.10.60-69
-#   iza     → LAN 10.0.0.70-79 · VPN 10.0.10.70-79
-#   kerem   → LAN 10.0.0.80-89 · VPN 10.0.10.80-89
-#   hannah  → LAN 10.0.0.90-99 · VPN 10.0.10.90-99
-#   guests  → LAN 10.0.0.100-200 · DHCP pool, no VPN
+# IP allocation (v5, /16 LAN — users LAN .70, users VPN .80, guests .90):
+#   admin   → LAN 10.0.70.0-9   · VPN 10.0.80.0-9   (admin/admin1/admin2 = infra/router/server)
+#   dumitru → LAN 10.0.70.10-19 · VPN 10.0.80.10-19
+#   adela   → LAN 10.0.70.20-29 · VPN 10.0.80.20-29
+#   tiberiu → LAN 10.0.70.30-39 · VPN 10.0.80.30-39
+#   david   → LAN 10.0.70.40-49 · VPN 10.0.80.40-49
+#   ramona  → LAN 10.0.70.50-59 · VPN 10.0.80.50-59
+#   tibisor → LAN 10.0.70.60-69 · VPN 10.0.80.60-69
+#   iza     → LAN 10.0.70.70-79 · VPN 10.0.80.70-79
+#   kerem   → LAN 10.0.70.80-89 · VPN 10.0.80.80-89
+#   hannah  → LAN 10.0.70.90-99 · VPN 10.0.80.90-99
+#   guests  → LAN 10.0.90.100-200 · DHCP pool, no VPN
 
 rec {
-  # User block base offsets (LAN = base, VPN = base — 10.0.10.x mirrors 10.0.0.x)
+  # User block base offsets (LAN base = .70, VPN base = .80 — mirrors)
   blocks = {
     admin   = { lan = 0;  vpn = 0;  };  # .0-.9
     dumitru = { lan = 10; vpn = 10; };  # .10-.19
@@ -45,7 +45,7 @@ rec {
       devices = [
         { hostname = "admin";  mac = null;               role = "infra";   note = "network address (.0) — not a real device"; }
         { hostname = "admin1"; mac = null;               role = "infra";   note = "router (Speedport, .1) — not a real device"; }
-        { hostname = "admin2"; mac = null;               role = "server";  note = "dell homelab — WG server 10.0.10.2 (.2)"; }
+        { hostname = "admin2"; mac = null;               role = "server";  note = "dell homelab — WG server 10.0.80.2 (.2)"; }
         { hostname = "admin3"; mac = "2c:9c:58:60:c8:25";                 note = "Arch PC (.3)"; }
         { hostname = "admin4"; mac = "TODO";                               note = "TBS — fill MAC here (spare device .4)"; }
         { hostname = "admin5"; mac = "TODO";                               note = "TBS — fill MAC here (spare device .5)"; }
@@ -212,17 +212,17 @@ rec {
 
   # Guest DHCP range (no VPN, no persistent client — dynamic pool .100-.200)
   guests = {
-    lanStart = "10.0.0.100";
-    lanEnd   = "10.0.0.200";   # .201-.254 unassigned
+    lanStart = "10.0.90.100";
+    lanEnd   = "10.0.90.200";   # .201-.254 unassigned
   };
 
   # Given a user name + device index (1-based), derive LAN and VPN IPs.
-  # Example: userToIps "adela" 2 → { lan = "10.0.0.21"; vpn = "10.0.10.21"; }
+  # Example: userToIps "adela" 2 → { lan = "10.0.70.21"; vpn = "10.0.80.21"; }
   userToIps = userName: idx:
     let block = blocks.${userName};
     in {
-      lan = "10.0.0.${toString (block.lan + idx - 1)}";
-      vpn = "10.0.10.${toString (block.vpn + idx - 1)}";
+      lan = "10.0.70.${toString (block.lan + idx - 1)}";
+      vpn = "10.0.80.${toString (block.vpn + idx - 1)}";
     };
 
   # ── v4 helpers (pure builtins only — no lib available at import time) ──

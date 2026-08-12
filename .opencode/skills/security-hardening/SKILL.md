@@ -8,14 +8,14 @@ description: Use when configuring or auditing security — DNSSEC, TLS/ACME, fir
 ## Zero-exposure model (OpenCode.md §3.2) — LOCKED
 | Flow | Path | Ports open on router |
 |------|------|----------------------|
-| Inbound SMTP | Internet -> mail.dnanu.de -> router fwd -> 10.0.0.2:25 | **25/tcp** |
+| Inbound SMTP | Internet -> mail.dnanu.de -> router fwd -> 10.0.10.11:25 (mail container) | **25/tcp** |
 | Public blogs + autoconfig | Cloudflare edge -> cloudflared tunnel -> nginx :8080 | none |
 | Remote access | Internet -> vpn.dnanu.de -> router fwd UDP 51820 -> WireGuard | **51820/udp** |
-| Everything else | Device -> WireGuard -> 10.0.0.2 (nginx 443, mail 993+465, admin UIs) | none |
+| Everything else | Device -> WireGuard -> 10.0.80.x -> nginx ingress (10.0.10.5) | none |
 | Outbound mail | Postfix -> smtp.resend.com:465 | none |
 | Downloads | confined netns -> AirVPN WireGuard | none |
 
-Host firewall (audit Finding 1): only 25/tcp + 51820/udp globally open; 53/80/443/465/587/993 source-scoped to LAN/ULA/link-local.
+Host firewall (audit Finding 1): only 25/tcp + 51820/udp globally open; 53/80/443/465/587/993 source-scoped to LAN/ULA/link-local. **Zone isolation:** nftables default-deny between the 9 zones (10.0.10/.20/.30/.40/.50/.60/.70/.80/.90) — frontend→backend, backend→DB, HA→IoT, nginx→all; backends host-side (no LAN IP).
 - If you open a port that isn't in this table, stop and ask. The whole network architecture depends on it.
 
 ## TLS (OpenCode.md §8)

@@ -28,5 +28,5 @@ cd /etc/nixos && sudo git pull origin main && sudo nixos-rebuild switch --flake 
 ## Rules
 - Never leave the server half-switched. Deploy = sync repo -> verify -> switch -> smoke-test -> report generation.
 - Deploy only `main` — feature branches are not deployed.
-- The "1% manual" after install (OpenCode.md §12): router LAN → /16 + Speedport v6 pass-through; Nextcloud admin + link Mail app to local IMAP; Jellyfin admin + libraries; Prowlarr indexers; connect managers to downloaders; Seerr↔Jellyfin; Vaultwarden admin; HA onboarding; Beszel agent key.
+- The "1% manual" after install (OpenCode.md §12): router LAN → /16 + Speedport v6 pass-through; Authentik setup + distribute invites; Nextcloud AIO admin (web UI) + install Memories/Passwords apps; Jellyfin admin + libraries; Prowlarr indexers; connect managers to downloaders; Seerr↔Jellyfin; HA onboarding; Beszel agent key.
 - Keep credentials in Memory.md (gitignored), never in the repo.

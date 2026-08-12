@@ -26,7 +26,7 @@ modules/{networking,services,system}/*.nix
 
 ## Verify-before-write
 - Every option you write must exist in the pinned `nixos-26.05` channel. **Primary tool: the `nixos` MCP server (`uvx mcp-nixos`)** — search/info packages, options, Home Manager, wiki, noogle, nix.dev. Cross-check with the `verifier` agent, the `nixpkgs` reference (`@nixpkgs`), or `context7`.
-- Abstract paths `/fast` and `/slow` only via `settings.nix` so prod migration is a new disko.nix + hardware config.
+- Abstract paths `/work`, `/fast`, `/slow` only via `settings.nix` so prod migration is a new disko.nix + hardware config.
 - ZFS: `networking.hostId = "<8 hex>";` is mandatory; `boot.kernelPackages = config.boot.zfs.package.latestCompatibleLinuxPackages;`.
 - Dell test box quirks: `services.logind.lidSwitch = "ignore";` and ARC capped via `boot.kernelParams = [ "zfs.zfs_arc_max=1073741824" ];` (param from settings.nix).
 
@@ -35,7 +35,7 @@ modules/{networking,services,system}/*.nix
 2. disko.nix + ZFS + hostId + Dell quirks ✅
 3. Networking: static IP, AdGuard, Kea, WireGuard, ddclient, cloudflared, nginx+ACME ✅
 4. Mail (SNM + Resend relay + sieve + DNS table) ✅
-5. Nextcloud (+Office) + Immich + Vaultwarden ✅
+5. Nextcloud podman AIO (+ EuroOffice) — Immich/Vaultwarden dropped (Nextcloud Memories/Passwords) ⬜
 6. Containerize all services (NixOS containers, /16 zones, WG v5) ⬜
 7. Authentik (IdP + profile page) ⬜
 8. Restic + Beszel + Glance + verification suite ⬜

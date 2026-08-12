@@ -13,6 +13,7 @@ description: Use when working on the mail system — simple-nixos-mailserver, Po
 ## Accounts
 - `hey@dnanu.de` — primary, aliases `it@ health@ wealth@ creative@ academic@ accounts@ contact@ partners@`, plus per-alias sieve `fileinto :create`.
 - `admin@dnanu.de` — services admin, aliases `postmaster@ hostmaster@ webmaster@ abuse@ security@`.
+- **9 family mailboxes** (`dumitru@ adela@ tiberiu@ david@ ramona@ tibisor@ iza@ kerem@ hannah@`) — **derived from `users.nix`** (single source of truth, §4.2), sops `mail_<user>` per account.
 - `hashedPasswordFile` points at `config.sops.secrets.mail_hey.path` / `mail_admin.path`.
 - Sieve: `if address :is "to" "it@dnanu.de" { fileinto :create "IT"; stop; }` x8; fallthrough -> INBOX (only `hey@` lands there).
 

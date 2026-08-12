@@ -7,9 +7,9 @@ Human-authored addressing authority. Referenced by `users.nix`, `settings.nix`, 
 | Block | Zone | Contents | Reachability |
 |---|---|---|---|
 | `10.0.0.0/24` | core | `.1` router, `.2` host (ZFS/WG/container runtime), `.3-.254` spare | host |
-| `10.0.10.0/24` | system/ops | nginx, mail, AdGuard, Kea, Authelia, ddclient, cloudflared, restic, Glance, Beszel | nginx + admin |
-| `10.0.20.0/24` | backend-cloud | PostgreSQL, Redis, MariaDB, Collabora | **host-side (no LAN IP)** |
-| `10.0.30.0/24` | frontend-cloud | Nextcloud, Immich, Vaultwarden, HA | macvlan, via nginx |
+| `10.0.10.0/24` | system/ops | nginx, mail, AdGuard, Kea, Authentik, ddclient, cloudflared, restic, Glance, Beszel | nginx + admin |
+| `10.0.20.0/24` | backend-cloud | PostgreSQL, Redis, MariaDB | **host-side (no LAN IP)** |
+| `10.0.30.0/24` | frontend-cloud | Nextcloud (podman AIO), HA | macvlan, via nginx |
 | `10.0.40.0/24` | backend-media | Sonarr, Radarr, Lidarr, Readarr, Livrarr, Prowlarr | **host-side (no LAN IP)** |
 | `10.0.50.0/24` | frontend-media | Jellyfin, Seerr, Mixarr, Shelfarr | macvlan, via nginx |
 | `10.0.60.0/24` | IoT | TV, Air, Xbox, smart devices | isolated; only HA reaches it |
@@ -19,7 +19,7 @@ Human-authored addressing authority. Referenced by `users.nix`, `settings.nix`, 
 
 ## Users (LAN 10.0.70.x / VPN 10.0.80.x — v4 blocks mirrored)
 
-Each user owns a 10-IP block: base = `[user]` (no number, the primary device / Authelia login), then `[user]1` … `[user]9`.
+Each user owns a 10-IP block: base = `[user]` (no number, the primary device / username), then `[user]1` … `[user]9`.
 
 | user | base LAN | base VPN | real devices |
 |---|---|---|---|
@@ -34,7 +34,7 @@ Each user owns a 10-IP block: base = `[user]` (no number, the primary device / A
 | kerem | 10.0.70.80 | 10.0.80.80 | all TBS |
 | hannah | 10.0.70.90 | 10.0.80.90 | all TBS |
 
-VPN naming: `[user]-vpn` (base) + `[user]1-vpn` … `[user]9-vpn`. Base hostname `[user]` = Authelia login.
+VPN naming: `[user]-vpn` (base) + `[user]1-vpn` … `[user]9-vpn`. Base hostname `[user]` = username (first.last).
 **Full pre-provision:** ALL slots get real WG keypairs + QRs — 7 admin peers (admin3-vpn..admin9-vpn) + 90 user peers = **97 WG peers, 194 sops keys**. Spare slots: MAC=TODO, IP reserved, QR rendered.
 MACs confirmed: adela1 TV = `00:c3:f4:ea:fe:a6`, david1 Xbox = `c4:9d:ed:c9:9a:13` — **moved to IoT block (10.0.60.x)** per 2026-08-08 ruling.
 

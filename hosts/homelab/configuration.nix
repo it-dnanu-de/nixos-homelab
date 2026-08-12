@@ -25,11 +25,6 @@
     ../../modules/services/mail.nix
     ../../modules/services/cloudflare-dns.nix
     ../../modules/services/ios-profile.nix
-    ../../modules/services/authelia.nix
-    ../../modules/services/nextcloud.nix
-    ../../modules/services/vaultwarden.nix
-    ../../modules/services/immich.nix
-    ../../modules/services/collabora.nix
     ../../modules/system/users.nix
   ];
 
@@ -50,9 +45,12 @@
   services.openssh.settings.PasswordAuthentication = true;
   services.openssh.settings.KbdInteractiveAuthentication = true;
 
+  # Postgres backups — host postgres now only serves app DBs; Nextcloud's DB
+  # lives inside the podman AIO container (backed up by restic on /fast, not
+  # postgresqlBackup). Immich dropped (2026-08-08).
   services.postgresqlBackup = {
     enable = true;
     location = "/fast/backups/postgres";
-    databases = [ "nextcloud" "immich" ];
+    databases = [ ];
   };
 }

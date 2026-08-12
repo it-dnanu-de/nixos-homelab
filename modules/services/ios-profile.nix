@@ -1,10 +1,11 @@
-# profile.dnanu.de — per-user WireGuard configs + (future) mail/CalDAV/CardDAV .mobileconfig.
-# OpenCode.md §10 (amended 2026-08-06). Public via cloudflared tunnel, guarded by Authelia
-# (TOTP 2FA). Each authenticated user is served ONLY their own peers' dir.
+# profile.dnanu.de — per-user WireGuard configs + QR codes.
+# OpenCode.md §10 (2026-08-08): the profile page moves INSIDE Authentik (custom
+# OIDC-gated page). The .mobileconfig generator is DROPPED (iOS/Android use native
+# apps / Nextcloud). This module is a BUILD TARGET — the builder reworks it to
+# Authentik auth (not Authelia below) when containerizing.
 #
-# DNS now rides inside WG peer configs; the old standalone dns.mobileconfig is retired.
-# WireGuard peer configs and QR codes are rendered by wireguard-profile-render oneshot
-# (wireguard.nix) into /var/lib/mobileprofile/wg/<user>/.
+# WireGuard peer configs and QR codes are rendered by wireguard-profile-render
+# oneshot (wireguard.nix) into /var/lib/mobileprofile/wg/<user>/.
 { config, settings, ... }:
 {
   services.nginx.virtualHosts."profile.${settings.domains.public}" = {

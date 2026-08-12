@@ -19,7 +19,7 @@
 | 03 | [Networking](03-Networking/todo.md) | ✅ done | IP, firewall, DNS, WG, tunnel |
 | 04 | [Mail](04-Mail/todo.md) | ✅ done + verified | SNM + Resend + hardening; mail-tester/MECSA/DANE green 2026-08-07 |
 | 05 | [Identity & Access](05-Identity-Access/todo.md) | ~ rework | Authentik IdP (replaces Authelia), WG peers, profiles |
-| 06 | [Cloud Services](06-Cloud-Services/todo.md) | ✅ done | Nextcloud(+Office), Collabora, Immich, Vaultwarden |
+| 06 | [Cloud Services](06-Cloud-Services/todo.md) | ~ rework | Nextcloud podman AIO (+EuroOffice), self-hosted iCloud |
 | 07 | [Downloads & VPN](07-Downloads/todo.md) | ⬜ next | qBit, SAB, slskd, VPN-Confinement netns |
 | 08 | [Arr Stack](08-Arr-Stack/todo.md) | ⬜ | Radarr/Sonarr/Lidarr/Readarr + Prowlarr + Seerr (stack LOCKED) |
 | 09 | [Media Player](09-Media-Players/todo.md) | ⬜ | Jellyfin (ONLY player) + LiquidFin client |

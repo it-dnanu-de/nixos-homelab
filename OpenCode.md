@@ -89,11 +89,11 @@
 **WireGuard P2P (2026-08-08):** server-routed peer-to-peer enabled — client `AllowedIPs` = `10.0.0.0/16` (whole internal space), wg0 forwarding on. Peers reach each other + all zones via the host. (AirDrop itself is Bluetooth/WiFi-direct, unaffected.)
 
 **Core rules:**
-- **All services run as NixOS containers** (`containers.<name>`, systemd-nspawn) with per-tier network placement (2026-08-08 architecture ruling). The host is a bare core (ZFS, kernel WireGuard, container runtime). Docker/oci-containers model is **retired** in favor of native NixOS containers.
-- **Tiered network zones with real isolation:** `10.0.0.0/16` LAN. Blocks: `.10` system/ops, `.20` backend-cloud (DBs+Collabora), `.30` frontend-cloud, `.40` backend-media (arrs), `.50` frontend-media, `.60` IoT, `.70` users LAN, `.80` users VPN, `.90` guests. **Default-deny nftables between zones**; explicit allows only (frontends→their backend, backends→their DB, HA→IoT, nginx→all). **Backends + DBs are host-side (no LAN IP, unreachable from user devices)**; only nginx + frontends get macvlan LAN presence. **nginx is the single ingress** to all services.
+- **Most services run as NixOS modules inside NixOS containers** (`containers.<name>`, systemd-nspawn). **Nextcloud runs as a podman AIO container** (EuroOffice/Memories/Passwords only exist as AIO — 2026-08-12). Host is a bare core (ZFS, kernel WireGuard, container runtime).
+- **Tiered network zones with real isolation:** `10.0.0.0/16` LAN. Blocks: `.10` system/ops, `.20` backend-cloud (DBs), `.30` frontend-cloud, `.40` backend-media (arrs), `.50` frontend-media, `.60` IoT, `.70` users LAN, `.80` users VPN, `.90` guests. **Default-deny nftables between zones**; explicit allows only (frontends→their backend, backends→their DB, HA→IoT, nginx→all). **Backends + DBs are host-side (no LAN IP, unreachable from user devices)**; only nginx + frontends get macvlan LAN presence. **nginx is the single ingress** to all services.
 - **WG clients move to `10.0.80.0/24` (Users VPN)** — v5 renumber (from 10.0.10.x), all 97 peers, QR re-render. WG server stays on the host.
 - Downloader VPN isolation via **VPN-Confinement network namespaces** (AirVPN).
-- **Prod switch = change only `disko.nix` + `hardware-configuration.nix` + `zfsArcMax` in settings.nix.** Everything else identical. The Dell is reformatted early in v1 to mirror `/fast` + `/slow` so this contract holds.
+- **Prod switch = change only `disko.nix` + `hardware-configuration.nix` + `zfsArcMax` in settings.nix.** Everything else identical. The Dell mirrors the 3 pools via `rpool/{work,fast,slow}` datasets so this contract holds.
 - **Accounts are declarative** — created via occ/CLI oneshots on first install (idempotent), not web UI. `users.nix` is the single source.
 - Data lives in DBs (postgres/sqlite) + `/fast` (container config in `/fast/containers`), backed up nightly via restic (7/4/12, 02:00). Accounts persist across rebuilds (verified).
 - Verification per change: CI flake check + targeted smoke. Full §13 suite after milestones.
@@ -103,8 +103,8 @@
 ## 1. Philosophy & Hard Rules
 
 1. **99% Declarative Rule.** NixOS declares infrastructure: ZFS, networking, services, users, paths, secrets, TLS. The human configures application *state* once via web UIs (admin accounts, indexers, libraries). No bootstrap scripts poking APIs — they rot.
-2. **All services are NixOS containers** (`containers.<name>`, systemd-nspawn) with tiered network zones (2026-08-08). Host = bare core (ZFS, kernel WG, container runtime). Per-tier default-deny isolation; nginx is the single ingress; backends are host-side (no LAN IP). Docker/oci-containers retired. VPN isolation always uses `VPN-Confinement` namespaces, not containers.
-3. **Zero open ports** except TCP 25 (inbound SMTP) + UDP 51820 (WireGuard), both forwarded to `10.0.0.2`. Everything else rides the WireGuard VPN, the Cloudflare tunnel, or a confined netns.
+2. **Most services = NixOS modules in NixOS containers** (`containers.<name>`, systemd-nspawn); **Nextcloud = podman AIO container** (EuroOffice — 2026-08-12). Per-tier default-deny isolation; nginx single ingress; backends host-side. VPN isolation always uses `VPN-Confinement` namespaces, not containers.
+3. **Zero open ports** except TCP 25 (inbound SMTP, forwarded to mail container 10.0.10.11) + UDP 51820 (WireGuard, forwarded to host 10.0.0.2). Everything else rides the WireGuard VPN, the Cloudflare tunnel, or a confined netns.
 4. **Stable channel, pinned flake.** `nixpkgs` follows `nixos-26.05`. No auto-upgrades. Human runs `nix flake update` deliberately, 2–4×/year.
 5. **Single-node monolith.** No clustering.
 6. **Single family, one human admin.** One services admin (`admin@dnanu.de`), 10 users (admin + 9 family), 11 mailboxes. `users.nix` is the single source of truth for users across all services.
@@ -142,7 +142,7 @@ Dell-specific: `services.logind.lidSwitch = "ignore"` (lid closed ≠ suspend �
   | Block | Zone | Contents | Reachability |
   |---|---|---|---|
   | `10.0.10.0/24` | system/ops | nginx, mail, AdGuard, Kea, Authentik, ddclient, cloudflared, restic, Glance, Beszel | nginx + admin |
-  | `10.0.20.0/24` | backend-cloud | PostgreSQL, Redis, MariaDB, Collabora | **host-side (no LAN IP)** |
+  | `10.0.20.0/24` | backend-cloud | PostgreSQL, Redis, MariaDB | **host-side (no LAN IP)** |
   | `10.0.30.0/24` | frontend-cloud | Nextcloud (the ENTIRE cloud: files/photos/passwords/notes/mail/cal/contacts), HA | macvlan, via nginx |
   | `10.0.40.0/24` | backend-media | Sonarr, Radarr, Lidarr, Readarr, Livrarr, Prowlarr | **host-side (no LAN IP)** |
   | `10.0.50.0/24` | frontend-media | Jellyfin, Seerr, Mixarr, Shelfarr | macvlan, via nginx |
@@ -349,7 +349,7 @@ nixos-homelab/
 │   └── installer/         # v2: custom ISO w/ ssh key for nixos-anywhere (placeholder)
 └── modules/
     ├── networking/{acme,adguard,base,cloudflare,ddclient,kea,nginx,nginx-helpers,wireguard}.nix
-    ├── services/{authentik,cloudflare-dns,collabora,immich,ios-profile,mail,nextcloud,vaultwarden}.nix
+    ├── services/{cloudflare-dns,ios-profile,mail,nextcloud}.nix   # + per-service NixOS-container + podman AIO declarations
     ├── system/{sops,storage-layout,users,zfs}.nix
 ```
 
@@ -380,9 +380,9 @@ nixos-homelab/
 | Authentik | `nix-community/authentik-nix` flake (`services.authentik`) | `auth.dnanu.de` + `profile.dnanu.de` | `.10` system | ⬜ | IdP: self-service signup+invites, admin UI, OIDC SSO, blueprint-driven from users.nix; replaces Authelia |
 | Nextcloud | **podman AIO container** (not `services.nextcloud`) | `cloud.nanulab.de` | `.30` frontend-cloud | ⬜ | NC 34 + Memories/Passwords/Notes/Talk/EuroOffice; AIO v13.4.1; sops env |
 | ~~Collabora~~ | ~~`services.collabora-online`~~ | — | 🗑 dropped 2026-08-12 | replaced by EuroOffice (AIO container) |
-| ~~Immich~~ | ~~`services.immich`~~ | — | 🗑 dropped 2026-08-08 | replaced by Nextcloud Memories (fetchNextcloudApp) |
-| ~~Vaultwarden~~ | ~~`services.vaultwarden`~~ | — | 🗑 dropped 2026-08-08 | replaced by Nextcloud Passwords (fetchNextcloudApp) |
-| PostgreSQL | `services.postgresql` | — | `.20` backend-cloud | ✅ | shared DB (nextcloud, immich) |
+| ~~Immich~~ | ~~`services.immich`~~ | — | 🗑 dropped 2026-08-08 | replaced by Nextcloud Memories (AIO app store) |
+| ~~Vaultwarden~~ | ~~`services.vaultwarden`~~ | — | 🗑 dropped 2026-08-08 | replaced by Nextcloud Passwords (AIO app store) |
+| PostgreSQL | `services.postgresql` | — | `.20` backend-cloud | ✅ | shared DB for host services; Nextcloud DB is in the podman AIO container |
 | Redis | `services.redis` | — | `.20` backend-cloud | ✅ | shared cache |
 | Home Assistant | `services.home-assistant` | `home.nanulab.de` | `.30` frontend-cloud | ⬜ | half-declared: 10 users declared; trusted_proxies |
 | Glance | `services.glance` | `status.nanulab.de` | `.10` system | ⬜ | admin-only dashboard; reads mail status file; **replaces email alerts** |
@@ -413,7 +413,7 @@ The `.mobileconfig` generator is **dropped** (2026-08-08 — iOS/Android users c
 
 ## 11. Backups (Restic → Backblaze B2)
 
-- `services.postgresqlBackup` nightly: `nextcloud`, `immich` → `/fast/backups/postgres`.
+- `services.postgresqlBackup` nightly: host app DBs → `/fast/backups/postgres`. (Nextcloud DB lives in the podman AIO container — backed up by restic, not postgresqlBackup.)
 - Restic nightly at **02:00** (2026-08-08), source = ZFS snapshot (crash-consistent) + dumps:
   - **Include:** `/fast` (Nextcloud files + Memories, Maildir, dumps, `/fast/containers`), `/var/lib` app state for every service in §9, `/etc/nixos`.
   - **Exclude:** `/slow/shared-media`, `/slow/downloads`, caches.

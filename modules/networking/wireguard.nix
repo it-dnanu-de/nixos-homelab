@@ -3,7 +3,7 @@
 # split-tunnel only (no exit node/NAT). One silent UDP port 51820.
 #
 # v4 (2026-08-06): 97 peers (7 admin admin3-9-vpn + 90 user), full pre-provision
-# with real keypairs. 10.0.10.0/24 subnet, server 10.0.10.2.
+# with real keypairs. v5: 10.0.80.0/24 subnet, server 10.0.80.2 (2026-08-08).
 # Peers derived from users.nix helpers (wgPeers/wgPeerNames).
 # Public keys in generated wireguard-pubkeys.nix.
 # Per-user QR renderer writes /var/lib/mobileprofile/wg/<user>/.
@@ -60,12 +60,12 @@ let
 [Interface]
 PrivateKey = $(cat "$priv")
 Address    = ${p.ip}/32
-DNS        = 10.0.0.2
+DNS        = 10.0.10.2  # AdGuard container (split-horizon)
 
 [Peer]
 PublicKey           = $SERVER_PUB
 PresharedKey        = $(cat "$psk")
-AllowedIPs          = 10.0.0.0/24
+AllowedIPs          = 10.0.0.0/16  # server-routed P2P: all internal zones
 Endpoint            = $ENDPOINT
 PersistentKeepalive = 25
 PEERCONF
@@ -146,7 +146,7 @@ in
 
   # ── WireGuard interface ───────────────────────────────────────────────
   networking.wireguard.interfaces.wg0 = {
-    ips = [ "${wgSettings.address}/24" ];
+    ips = [ "${wgSettings.address}/24" ];  # address from settings (10.0.80.2)
     listenPort = wgSettings.port;
     privateKeyFile = config.sops.secrets.wireguard_server_private.path;
     peers = map (p: {

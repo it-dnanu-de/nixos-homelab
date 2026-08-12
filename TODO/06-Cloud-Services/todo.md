@@ -1,30 +1,24 @@
 # TODO — 06 Cloud Services (self-hosted iCloud — Nextcloud is the ENTIRE cloud)
 
-**Status:** ~ rework (2026-08-08: Nextcloud becomes the whole cloud; Immich + Vaultwarden dropped) · **Owner:** builder + architect · **Modules:** `modules/services/nextcloud.nix` (+ fetchNextcloudApp packaging)
+**Status:** ~ rework (2026-08-08/12: Nextcloud becomes the whole cloud, runs as podman AIO; Immich + Vaultwarden dropped) · **Owner:** builder + architect · **Modules:** `modules/services/nextcloud.nix` (podman AIO)
 
-> **Nextcloud = the self-hosted iCloud (2026-08-08).** One Authentik login → invite → native iOS/Android clients (mail/cal/contacts/files via IMAP/CalDAV/CardDAV/WebDAV) → iCloud-style launcher. Drop Immich + Vaultwarden. Package Memories + Passwords via `fetchNextcloudApp`.
+> **Nextcloud = the self-hosted iCloud (2026-08-08).** One Authentik login → invite → native iOS/Android clients (mail/cal/contacts/files via IMAP/CalDAV/CardDAV/WebDAV) → iCloud-style launcher. Runs as **podman AIO** (not the nixpkgs module — 2 majors behind). Drop Immich + Vaultwarden. Memories + Passwords + EuroOffice install from the AIO app store.
 
-## Nextcloud (`services.nextcloud`) — `cloud.nanulab.de`
-- [x] Module + PostgreSQL + Redis auto-provisioned
-- [x] Declarative warning fixes (maintenance window, phone region, serverId, log_type, opcache, language/locale)
-- [x] RAM-tuned PHP-FPM (pm=ondemand, max_children=8)
-- [x] richdocuments (Office) + WOPI → office.nanulab.de
-- [x] maxUploadSize 16G
-- [ ] `defaultapp = "dashboard"` (iCloud-style landing, 2026-08-08)
-- [ ] **iCloud-style launcher** (app tile grid after login — user-facing only; separate from Glance admin dashboard)
+## Nextcloud — podman AIO — `cloud.nanulab.de`
+- [ ] `virtualisation.oci-containers.backend = "podman"`
+- [ ] Nextcloud AIO container (`ghcr.io/nextcloud-releases/all-in-one:v13.4.1`, pinned) + sops env
+- [ ] AIO sub-containers: postgres, redis, apache, **eurooffice** (`ghcr.io/euro-office/documentserver:v9.3.2`)
+- [ ] Loopback ports → nginx ingress (user-tier ACL)
+- [ ] **EuroOffice** replaces Collabora (Office)
+- [ ] Apps from AIO app store: **Memories** (photos, replaces Immich), **Passwords** (replaces Vaultwarden), Notes, Talk (⚠️ TURN decision pending)
+- [ ] `defaultapp = "dashboard"` (iCloud-style landing)
+- [ ] **iCloud-style launcher** (app tile grid after Authentik login — user-facing only; separate from Glance admin dashboard)
+- [ ] `/fast/users/<user>` as Nextcloud data dir + Memories index
 
-## Apps to install (the iCloud surface)
-- [x] Mail, Calendar, Contacts, richdocuments (already)
-- [ ] **Memories** (photos) — ⚠️ package via `fetchNextcloudApp` v8.1.0 (github.com/pulsejet/memories). **Replaces Immich.**
-- [ ] **Passwords** — ⚠️ package via `fetchNextcloudApp` (git.mdns.eu nightly). **Replaces Vaultwarden.**
-- [ ] **Notes** — ✅ packaged (`notes`)
-- [ ] **Talk** — ✅ packaged (`spreed`) — **REVISIT (2026-08-08)**: calls need TURN server + ports (3478/5349) = zero-port conflict. Decision pending: text-only vs full.
-- [ ] Tasks, Bookmarks, News (RSS), Cookbook — family apps (all packaged)
-- [ ] Verify `fetchNextcloudApp` packaging works for Memories/Passwords (one expr each)
-
-## Dropped (2026-08-08)
+## Dropped (2026-08-08/12)
 - 🗑 **Immich** → replaced by Nextcloud Memories
 - 🗑 **Vaultwarden** → replaced by Nextcloud Passwords
+- 🗑 **Collabora** → replaced by EuroOffice (AIO)
 - 🗑 mobileconfig → native iOS/Android clients connect directly (IMAP/CalDAV/CardDAV/WebDAV)
 
 ## Native client config (mobile/desktop)

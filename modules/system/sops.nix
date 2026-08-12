@@ -30,20 +30,13 @@
       b2_account_key = {};
       restic_password = {};
       nextcloud_admin_pass = {};
+      nextcloud_aio_env = {};   # TODO(build): AIO env file (admin URL, ports, etc.)
       slskd_env = {};
-      # Authelia authentication (OpenCode.md §7, plan §3)
-      authelia_jwt = {
-        owner = "authelia-main";
-      };
-      authelia_storage_key = {
-        owner = "authelia-main";
-      };
-      authelia_users_yaml = {
-        owner = "authelia-main";
-        mode = "0400";
-      };
-      mobileca_key = {};
-      mobileca_cert = {};
+      # Authentik (IdP) secrets — added at build time with the Authentik container
+      authentik_secret_key = {};
+      authentik_postgres_password = {};
+      # per-user per-service password hashes (user_<name>_pass_<service>)
+      # (Authelia + mobileca secrets removed 2026-08-08 — Authelia dropped, .mobileconfig dropped)
     };
   };
 }

@@ -7,7 +7,7 @@ A 20-year NixOS homelab for **dnanu.de**. Single node, single user, 99% declarat
 ## What this repo is
 
 - The complete NixOS configuration for the homelab server: `flake.nix`, `settings.nix`, `users.nix`, sops-encrypted `secrets/secrets.yaml`, `hosts/homelab`, and modular config under `modules/`.
-- ZFS + disko storage (`/fast`, `/slow`), split-horizon DNS (AdGuard + WireGuard VPN), a full mail stack (simple-nixos-mailserver + Resend relay), the private-cloud tier (Nextcloud + Collabora + Immich + Vaultwarden), and a planned "feels like Netflix" media pipeline — all behind a minimal-exposure network (**25/tcp + 51820/udp only**).
+- ZFS + disko storage (`/work`, `/fast`, `/slow`), split-horizon DNS (AdGuard + WireGuard VPN), a full mail stack (simple-nixos-mailserver + Resend relay), a self-hosted iCloud (Nextcloud podman AIO: files/photos/passwords/notes/mail/calendar/contacts + EuroOffice), and a "feels like Netflix" media pipeline (Seerr → arrs → Jellyfin) — all behind a minimal-exposure network (**25/tcp + 51820/udp only**).
 - ~25 native NixOS services. One player (Jellyfin), one client (LiquidFin), containers allowed where justified.
 
 ## Status
@@ -21,7 +21,7 @@ A 20-year NixOS homelab for **dnanu.de**. Single node, single user, 99% declarat
 | Networking (static IP, firewall, AdGuard, Kea, WireGuard 97 peers, ddclient, ACME, nginx, tunnel, DNSSEC) | ✅ |
 | Mail (SNM + Resend, sieve, hardening) | ✅ verified green (mail-tester/MECSA/DANE) |
 | Identity & Access (Authentik IdP, nginx ACL, profile/QRs) | ~ |
-| Cloud Services (Nextcloud+Office, Collabora, Immich, Vaultwarden) | ✅ |
+| Cloud Services (Nextcloud podman AIO + EuroOffice, self-hosted iCloud) | ~ |
 | Downloads & VPN (qBit/SAB/slskd + confinement) | ⬜ next milestone |
 | Arr Stack (Radarr/Sonarr/Lidarr/Readarr, Prowlarr, Seerr) | ⬜ |
 | Media Player (Jellyfin — only player, LiquidFin client) | ⬜ |

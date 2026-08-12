@@ -175,3 +175,20 @@ Criterion: "whatever declares itself better" → NixOS modules are more declarat
 - Media stack = NixOS modules (Jellyfin, Prowlarr, Radarr, Sonarr, Lidarr, Readarr, Seerr, qBit, SAB, slskd) — all current in 26.05.
 - Package the trio by us: Livrarr (Rust), Shelfarr (Ruby), Mixarr (TypeScript) — follow nixpkgs servarr pattern. Part of media milestone.
 - Only Nextcloud AIO remains podman (EuroOffice justification).
+
+## 2026-08-12 — Final pre-merge sweep: repo aligned with locked architecture
+
+Removed obsolete modules: authelia.nix, collabora.nix, immich.nix, vaultwarden.nix (dropped services). Deleted from configuration.nix imports. nextcloud.nix rewritten as podman-AIO build target.
+
+Fixed /16 + WG v5 across the codebase:
+- settings.nix: prefixLength 16, subnet 10.0.0.0/16, WG subnet 10.0.80.0/24 + address 10.0.80.2
+- users.nix: userToIps → .70 LAN / .80 VPN, guests → .90.100-.200
+- wireguard.nix: DNS 10.0.10.2, AllowedIPs 10.0.0.0/16
+- base.nix: firewall -s 10.0.0.0/16 (was /24), zone-isolation TODO
+- adguard.nix: infra id 10.0.80.2, rewrite-target note
+- sops.nix: removed authelia_*/mobileca_*, added authentik_* + nextcloud_aio_env
+- secrets.yaml: removed authelia_*/mobileca_* keys
+
+Docs/skills/todos aligned: security-hardening port table (10.0.10.11 mail, 10.0.10.5 nginx), verification @10.0.10.2 + media vhosts + zone isolation, zfs-disko 3 pools + v2 tree, sops-secrets inventory, deployment 1% manual, nixos-flake build order, network-addressing zones, TODO 06/08/README, README cloud description.
+
+This is the DEFINITION phase: docs describe the target, modules are the build targets with TODO(build) markers. Builder implements the container/podman architecture next.
