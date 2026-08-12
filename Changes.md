@@ -168,3 +168,10 @@ Final placement:
 - Podman: Nextcloud AIO+EuroOffice, Jellyfin, Prowlarr, Radarr, Sonarr, Lidarr, Readarr, Seerr, qBittorrent, SABnzbd, slskd, Livrarr, Shelfarr, Mixarr
 - Host: WireGuard, ZFS, container runtime
 Docs updated (container model + media stack table + service map rows).
+
+## 2026-08-12 — Decision: package Livrarr/Shelfarr/Mixarr, media stack stays NixOS modules
+
+Criterion: "whatever declares itself better" → NixOS modules are more declarative than podman.
+- Media stack = NixOS modules (Jellyfin, Prowlarr, Radarr, Sonarr, Lidarr, Readarr, Seerr, qBit, SAB, slskd) — all current in 26.05.
+- Package the trio by us: Livrarr (Rust), Shelfarr (Ruby), Mixarr (TypeScript) — follow nixpkgs servarr pattern. Part of media milestone.
+- Only Nextcloud AIO remains podman (EuroOffice justification).
