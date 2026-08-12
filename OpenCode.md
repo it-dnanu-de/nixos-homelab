@@ -27,25 +27,28 @@
 | Role | Service | Container zone |
 |---|---|---|
 | Client | **LiquidFin** (Apple; user choice; v1 personal pick, v2 client-agnostic) | external app |
-| Player | **Jellyfin** (the ONLY player — movies/TV/music/audiobooks/books) | frontend-media `.50` |
-| Index manager | **Prowlarr** | backend-media `.40` |
-| Movies manager | **Radarr** | backend-media `.40` |
-| TV manager | **Sonarr** | backend-media `.40` |
-| Music manager | **Lidarr** | backend-media `.40` |
+| Player | **Jellyfin** (podman — the ONLY player; movies/TV/music/audiobooks/books) | frontend-media `.50` |
+| Index manager | **Prowlarr** (podman) | backend-media `.40` |
+| Movies manager | **Radarr** (podman) | backend-media `.40` |
+| TV manager | **Sonarr** (podman) | backend-media `.40` |
+| Music manager | **Lidarr** (podman) | backend-media `.40` |
 | Books/audiobooks manager | **Livrarr** (podman — no Nix module) | backend-media `.40` |
-| Books arr | **Readarr** (native NixOS module, pinned + rreading-glasses mirror) | backend-media `.40` |
-| Requests (movies/TV) | **Seerr** (native NixOS module) | frontend-media `.50` |
+| Books arr | **Readarr** (podman, pinned + rreading-glasses mirror) | backend-media `.40` |
+| Requests (movies/TV) | **Seerr** (podman) | frontend-media `.50` |
 | Requests (music) | **Mixarr** (podman — no Nix module) | frontend-media `.50` |
 | Requests (books/audiobooks) | **Shelfarr** (podman — no Nix module) | frontend-media `.50` |
-| Downloaders | **qBittorrent + SABnzbd + slskd** (VPN-Confinement netns, all confirmed) | `.10` system (VPN-isolated) |
+| Downloaders | **qBittorrent + SABnzbd + slskd** (podman + VPN-Confinement netns) | `.10` system (VPN-isolated) |
 | Audiobooks | manual (no arr; drop into Jellyfin audiobook library) | — |
 | Podcasts / comics / manga | **dropped** | — |
 
-**Container model (2026-08-08, amended 2026-08-12):** most services run as **NixOS containers** (`containers.<name>`, systemd-nspawn) with their native modules inside. **Exceptions that run as podman containers** (declared via `virtualisation.oci-containers.backend = "podman"`, pinned images, sops secrets): **Nextcloud AIO** (NC module 2 majors behind; EuroOffice/Memories/Passwords only exist as AIO containers) and **Livrarr / Shelfarr / Mixarr** (have NO NixOS module or package in 26.05 — they run from their GitHub-release container images). Everything else stays native NixOS containers (Jellyfin + Sonarr/Radarr/Lidarr/Readarr/Prowlarr/Seerr are current in 26.05 — no benefit to containerizing).
+**Container model (2026-08-08, amended 2026-08-12):** services split into **NixOS modules (in NixOS containers)** and **podman containers**:
+- **NixOS modules in NixOS containers** (infra + cloud + ops): Nginx, AdGuard, Kea, ddclient, cloudflared, CF DNS sync, Mail (SNM), Authentik (flake), Home Assistant, Glance, Beszel, Restic, PostgreSQL, Redis, VPN-Confinement.
+- **Podman containers** (declared via `virtualisation.oci-containers.backend = "podman"`, pinned images, sops secrets): **Nextcloud AIO** (NC module 2 majors behind; EuroOffice/Memories/Passwords only exist as AIO), the **entire media stack** (Jellyfin, Prowlarr, Radarr, Sonarr, Lidarr, Readarr, Seerr, qBittorrent, SABnzbd, slskd, Livrarr, Shelfarr, Mixarr), and the **unpackaged trio** (Livrarr/Shelfarr/Mixarr — no Nix module or package in 26.05). 2026-08-12 ruling: media stack runs in podman for uniformity even though the native Nix modules exist and are current.
+- **Host (bare core, not containerized):** WireGuard (kernel), ZFS (kernel), container runtime.
 
 **Container declarability model:**
-- **NixOS containers** (`containers.<name>`, systemd-nspawn) for: Nginx, AdGuard, Kea, Mail (SNM), Authentik, Jellyfin, HA, Glance, Beszel, Restic, Sonarr, Radarr, Lidarr, Readarr, Prowlarr, Seerr, downloaders (qBit/SAB/slskd + VPN netns).
-- **Podman containers** (oci-containers backend=podman) for: **Nextcloud AIO** + sub-containers (postgres/redis/apache/**eurooffice**), **Livrarr**, **Shelfarr**, **Mixarr**.
+- **NixOS containers** (`containers.<name>`, systemd-nspawn): infra/cloud/ops services with their native modules inside.
+- **Podman containers** (oci-containers backend=podman): Nextcloud AIO (+ sub-containers: postgres/redis/apache/**eurooffice**), Jellyfin, the arrs, downloaders, Livrarr/Shelfarr/Mixarr.
 - **Users declarative:** per-service accounts provisioned via occ/CLI oneshots at first boot (idempotent), from `users.nix`.
 - **Web UI once, persists forever:** DB-level state lives in the container's `/var/lib` or `/fast` volume — configured once via web UI, persists across rebuild/reboot.
 - The web-UI-once step is part of the §12 "1% manual" list.
@@ -384,19 +387,19 @@ nixos-homelab/
 | Glance | `services.glance` | `status.nanulab.de` | `.10` system | ⬜ | admin-only dashboard; reads mail status file; **replaces email alerts** |
 | Beszel | `services.beszel.hub` + `.agent` | via Glance | `.10` system | ⬜ | monitors host + services + containers |
 | Restic | `services.restic.backups.b2` | — | `.10` system | ⬜ | §11; nightly 02:00, 7/4/12 |
-| Jellyfin | `services.jellyfin` | `media.nanulab.de` | `.50` frontend-media | ⬜ | the ONLY player; SNB iGPU vaapi / prod intel-media-driver |
-| Seerr | `services.seerr` | `tv.nanulab.de` | `.50` frontend-media | ⬜ | movies/TV requests |
+| Jellyfin | podman container | `media.nanulab.de` | `.50` frontend-media | ⬜ | the ONLY player; SNB iGPU vaapi / prod intel-media-driver |
+| Seerr | podman container | `tv.nanulab.de` | `.50` frontend-media | ⬜ | movies/TV requests |
 | Mixarr | container (unpackaged) | `music.nanulab.de` | `.50` frontend-media | ⬜ | music requests |
 | Shelfarr | container (unpackaged) | `books.nanulab.de` | `.50` frontend-media | ⬜ | books/audiobooks requests |
-| Prowlarr | `services.prowlarr` | `prowlarr.nanulab.de` (admin) | `.40` backend-media | ⬜ | indexer manager (host-side) |
-| Radarr | `services.radarr` | `radarr.nanulab.de` (admin) | `.40` backend-media | ⬜ | movies manager (host-side) |
-| Sonarr | `services.sonarr` | `sonarr.nanulab.de` (admin) | `.40` backend-media | ⬜ | TV manager (host-side) |
-| Lidarr | `services.lidarr` | `lidarr.nanulab.de` (admin) | `.40` backend-media | ⬜ | music manager (host-side) |
-| Readarr | `services.readarr` | `readarr.nanulab.de` (admin) | `.40` backend-media | ⬜ | books arr, pinned + mirror (host-side) |
+| Prowlarr | podman container | `prowlarr.nanulab.de` (admin) | `.40` backend-media | ⬜ | indexer manager (host-side) |
+| Radarr | podman container | `radarr.nanulab.de` (admin) | `.40` backend-media | ⬜ | movies manager (host-side) |
+| Sonarr | podman container | `sonarr.nanulab.de` (admin) | `.40` backend-media | ⬜ | TV manager (host-side) |
+| Lidarr | podman container | `lidarr.nanulab.de` (admin) | `.40` backend-media | ⬜ | music manager (host-side) |
+| Readarr | podman container | `readarr.nanulab.de` (admin) | `.40` backend-media | ⬜ | books arr, pinned + mirror (host-side) |
 | Livrarr | container (unpackaged) | `livrarr.nanulab.de` (admin) | `.40` backend-media | ⬜ | books/audiobooks manager (host-side) |
-| qBittorrent | `services.qbittorrent` | via VPN bridge IP | `.10` system | ⬜ | AirVPN netns; listen port = forwarded |
-| SABnzbd | `services.sabnzbd` | via VPN bridge IP | `.10` system | ⬜ | AirVPN netns |
-| slskd | `services.slskd` | via VPN bridge IP | `.10` system | ✅ in | AirVPN netns; confirmed in stack (2026-08-08) |
+| qBittorrent | podman + VPN netns | via VPN bridge IP | `.10` system | ⬜ | AirVPN netns; listen port = forwarded |
+| SABnzbd | podman + VPN netns | via VPN bridge IP | `.10` system | ⬜ | AirVPN netns |
+| slskd | podman + VPN netns | via VPN bridge IP | `.10` system | ✅ in | AirVPN netns; confirmed in stack (2026-08-08) |
 | VPN | `vpnNamespaces.wg` (VPN-Confinement) | — | host | ⬜ | `wireguardConfigFile`=sops; portMappings; openVPNPorts |
 
 ## 10. Profile / WG-QR page — ✅ inside Authentik (2026-08-08)

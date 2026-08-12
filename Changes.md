@@ -157,3 +157,14 @@ Dropped: GLM 5.2 (troubleshooter), Nemotron (weak per benchmark).
 - Verified against pinned 26.05: only Readarr/Sonarr/Radarr/Lidarr/Prowlarr/Seerr have native modules+packages.
 - Livrarr, Shelfarr, Mixarr have NO nixos module AND NO package — they must run as podman containers (GitHub-release images).
 - Container model updated: 3 tiers — (1) NixOS modules in NixOS containers, (2) podman for Nextcloud AIO+EuroOffice, (3) podman for Livrarr/Shelfarr/Mixarr.
+
+## 2026-08-12 — Media stack moved to podman (full list locked)
+
+Human ruling: the ENTIRE media stack runs in podman (uniformity), even though
+Jellyfin/Sonarr/Radarr/Lidarr/Readarr/Prowlarr/Seerr have current native Nix modules.
+
+Final placement:
+- NixOS modules (in NixOS containers): Nginx, AdGuard, Kea, ddclient, cloudflared, CF DNS sync, Mail(SNM), Authentik, HA, Glance, Beszel, Restic, PostgreSQL, Redis, VPN-Confinement
+- Podman: Nextcloud AIO+EuroOffice, Jellyfin, Prowlarr, Radarr, Sonarr, Lidarr, Readarr, Seerr, qBittorrent, SABnzbd, slskd, Livrarr, Shelfarr, Mixarr
+- Host: WireGuard, ZFS, container runtime
+Docs updated (container model + media stack table + service map rows).
