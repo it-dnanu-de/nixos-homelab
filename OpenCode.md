@@ -41,12 +41,13 @@
 | Audiobooks | manual (no arr; drop into Jellyfin audiobook library) | — |
 | Podcasts / comics / manga | **dropped** | — |
 
-**Container model (2026-08-08 architecture ruling):** **ALL services are NixOS containers** (`containers.<name>`, systemd-nspawn) — the Docker/oci-containers model is **retired**. Each service = a NixOS container with its own NixOS config, placed in a network zone (see §3.1). Backends + DBs are host-side (no LAN IP); only nginx + frontends get macvlan LAN presence. nginx = single ingress. **Every service module (`services.nextcloud`, `services.jellyfin`, …) becomes the container's internal config.**
+**Container model (2026-08-08, amended 2026-08-12):** services run as **NixOS containers** (`containers.<name>`, systemd-nspawn) EXCEPT **Nextcloud, which runs as a declarative podman container** (2026-08-12 ruling). The pinned nixpkgs Nextcloud module is 2 majors behind (32 vs 34 upstream) and cannot run **EuroOffice / Memories / Passwords** (not packaged). Nextcloud AIO (podman) is the only path to EuroOffice + NC34. Everything else stays native NixOS containers (Jellyfin + arrs are current in 26.05 — no benefit to containerizing). Declared via `virtualisation.oci-containers.backend = "podman"` + `containers` (pinned images, sops secrets). See the Cloud section for the Nextcloud podman details.
 
 **Container declarability model:**
-- **Container = a NixOS systemd-nspawn container** declared in Nix (`containers.<name>`), fully declarative: its own `services.*` config, storage, network zone. No Docker.
+- **NixOS containers** (`containers.<name>`, systemd-nspawn) for most services: fully declarative, own `services.*` config, storage, network zone. No Docker.
+- **Nextcloud = podman container** (declarative via oci-containers backend=podman, pinned image, sops env). Runs Nextcloud AIO + EuroOffice DocumentServer (`ghcr.io/euro-office/documentserver`).
 - **Users declarative:** per-service accounts provisioned via occ/CLI oneshots at first boot (idempotent), from `users.nix`.
-- **Web UI once, persists forever:** DB-level state (download clients, indexers, root folders) lives in the container's `/var/lib` or `/fast/containers/<app>` — configured once via web UI, persists across rebuild/reboot.
+- **Web UI once, persists forever:** DB-level state lives in the container's `/var/lib` or `/fast` volume — configured once via web UI, persists across rebuild/reboot.
 - The web-UI-once step is part of the §12 "1% manual" list.
 
 **Cloud = self-hosted iCloud (2026-08-08) — Nextcloud is the ENTIRE cloud.** One login portal (Authentik) → invite → **profile install** (native iOS/Android clients) → **iCloud-style home launcher** showing all apps. Nextcloud replaces Immich + Vaultwarden entirely:
@@ -57,16 +58,19 @@
 | Nextcloud **Mail** | Mail | iOS Mail app (IMAP/SMTP) / desktop web |
 | Nextcloud **Calendar+Tasks** | Calendar | iOS Calendar app (CalDAV) / desktop web |
 | Nextcloud **Contacts** | Contacts | iOS Contacts app (CardDAV) / desktop web |
-| Nextcloud **Memories** | Photos | ⚠️ **not in nixpkgs — package via `fetchNextcloudApp`** (v8.1.0, github.com/pulsejet/memories). Nextcloud app for uploads/management. **Replaces Immich.** |
-| Nextcloud **Passwords** | Passwords | ⚠️ **not in nixpkgs — package via `fetchNextcloudApp`** (nightly 2026.8.20, git.mdns.eu). **Replaces Vaultwarden.** |
-| Nextcloud **Notes** | Notes | ✅ packaged (`notes`) |
-| Nextcloud **Talk** | Chat | ✅ packaged (`spreed`) but **TALK REVISITED (2026-08-08)** — calls need TURN server + ports (3478/5349) = violates zero-port rule; decision pending: text-only vs full |
+| Nextcloud **Memories** | Photos | via AIO app store (indexes `/fast/users/<user>/photos`). **Replaces Immich.** |
+| Nextcloud **Passwords** | Passwords | via AIO app store. **Replaces Vaultwarden.** |
+| Nextcloud **Notes** | Notes | via AIO app store |
+| Nextcloud **Talk** | Chat | **TALK REVISITED (2026-08-08)** — calls need TURN server + ports (3478/5349) = violates zero-port rule; decision pending: text-only vs full |
+| **EuroOffice** | Office | ⚠️ **via Nextcloud AIO only** — `ghcr.io/euro-office/documentserver:v9.3.2` (official EuroOffice DocumentServer, AIO container). NOT available in any nixpkgs channel. This is the reason Nextcloud runs in podman. Replaces Collabora. |
 
-**Mobile (iOS):** native Mail/Calendar/Contacts/Files apps connect via IMAP/CalDAV/CardDAV/WebDAV (no mobileconfig — native config). Nextcloud app handles Photos (Memories)/Passwords/Notes/Talk. **Desktop:** Nextcloud web apps for all. **The iCloud-style home launcher** (app tile grid after Authentik login) is a separate surface from Glance (admin status dashboard) — user-facing apps only. `fetchNextcloudApp` = one small expr per app (url+sha512) — Memories + Passwords are easy to add, verified on the app store.
+**Nextcloud runtime — podman AIO (2026-08-12 ruling):** Nextcloud runs as a **declarative podman container** (`virtualisation.oci-containers.backend = "podman"`), not the nixpkgs module (which is 2 majors behind: pinned 32 vs upstream 34) and cannot do EuroOffice/Memories/Passwords. Uses **Nextcloud All-in-One** (AIO v13.4.1, `ghcr.io/nextcloud-releases/all-in-one`) + its containers (postgres, redis, apache, **eurooffice**, collab…). Declared via Nix (pinned images, sops env), not Docker Compose. Collabora dropped — EuroOffice replaces it.
+
+**Mobile (iOS):** native Mail/Calendar/Contacts/Files apps connect via IMAP/CalDAV/CardDAV/WebDAV (no mobileconfig — native config). Nextcloud app handles Photos (Memories)/Passwords/Notes/Talk. **Desktop:** Nextcloud web apps for all. **The iCloud-style home launcher** (app tile grid after Authentik login) is a separate surface from Glance (admin status dashboard) — user-facing apps only.
 
 **Users — single source of truth (2026-08-08):** `users.nix` is the single source for ALL services. Each user profile carries: tier (admin/user/family), first/last name → **username = `first.last`** (e.g. `dumitru.nanu`), email (`<username>@dnanu.de`), timezone, device MACs, and per-service provisioning (mail, nextcloud, vault, HA, jellyfin). Every service module reads from `users.nix` — one place edits a user. **11 mailboxes** (hey@, admin@, + 9 family users), separate mailboxes per user, current alias set (hey@ 8 aliases + admin@ 5) kept. **All 10 users provisioned on everything**; no per-user opt-out — "mail is not user-choice". **`first.last` rename is a dedicated milestone** (2026-08-08).
 
-**Auth & user provisioning — Authentik (2026-08-08):** **Authentik replaces Authelia** as the IdP (accept heavier RAM on the Dell; prod 64GB solves it). Runs via the `nix-community/authentik-nix` flake (no `services.authentik` in pinned 26.05 — the flake is the module source). Provides: **self-service signup + invites** (the "iCloud-style" flow), **admin webUI** (users/groups/roles/service access), **full OIDC SSO** into Nextcloud, Vaultwarden, HA, Jellyfin, Glance, arrs (one login everywhere), password reset + recovery emails. **users.nix drives Authentik declaratively via blueprints** (YAML: users, groups, flows, providers) — new user in users.nix → blueprint → Authentik account + per-service provisioning. **Profile/WG-QR page lives inside Authentik** (custom page). The standalone provisioning portal idea is folded into Authentik's flows; devices/MACs still admin-managed in users.nix (MAC = LAN/DHCP identity; WireGuard uses its own generated keys).
+**Auth & user provisioning — Authentik (2026-08-08):** **Authentik replaces Authelia** as the IdP (accept heavier RAM on the Dell; prod 64GB solves it). Runs via the `nix-community/authentik-nix` flake (no `services.authentik` in pinned 26.05 — the flake is the module source). Provides: **self-service signup + invites** (the "iCloud-style" flow), **admin webUI** (users/groups/roles/service access), **full OIDC SSO** into Nextcloud, HA, Jellyfin, Glance, arrs (one login everywhere), password reset + recovery emails. **users.nix drives Authentik declaratively via blueprints** (YAML: users, groups, flows, providers) — new user in users.nix → blueprint → Authentik account + per-service provisioning. **Profile/WG-QR page lives inside Authentik** (custom page). The standalone provisioning portal idea is folded into Authentik's flows; devices/MACs still admin-managed in users.nix (MAC = LAN/DHCP identity; WireGuard uses its own generated keys).
 
 **Memory layer (2026-08-08) — LIVE:** **engram v1.20.0** (single Go binary + SQLite, no Docker/Postgres/Node) installed on the Arch dev machine and wired into opencode via `engram setup opencode` (plugin + MCP stdio, auto-start HTTP server). Seeded with 9 core project-knowledge entries (vision, architecture, auth, media stack, users, email rule, monitoring, models, open issues). Agents save + retrieve via `engram save`/`engram search` (FTS keyword recall) — token-minimizing: agents pull only what they need instead of loading Memory.md whole. DB: `~/.engram/engram.db`. *Upgrade path if vector RAG is wanted later: OpenRouter `nvidia/nemotron-3-embed-1b:free` embeddings (2048-dim, free, verified) + a vector store. Embeddings on OpenRouter: 33 models via `output_modalities=embeddings`; most need extra providers. Multimodal (verified via MCP): most agent models accept image/file input; verifier + deployer text-only; Muse Spark 1.2 most capable.*
 
@@ -370,8 +374,8 @@ nixos-homelab/
 | Mail | SNM `mailserver.*` | `mail.dnanu.de` | `.10` system | ✅ | §4, 11 mailboxes, verified green |
 | Cloudflare DNS sync | systemd service | — | `.10` system | ✅ | DNS/DKIM/TLSA/MTA-STS upsert |
 | Authentik | `nix-community/authentik-nix` flake (`services.authentik`) | `auth.dnanu.de` + `profile.dnanu.de` | `.10` system | ⬜ | IdP: self-service signup+invites, admin UI, OIDC SSO, blueprint-driven from users.nix; replaces Authelia |
-| Nextcloud | `services.nextcloud` | `cloud.nanulab.de` | `.30` frontend-cloud | ✅ | pg+redis; apps mail/calendar/contacts/richdocuments/files; 16G; RAM-tuned |
-| Collabora | `services.collabora-online` | `office.nanulab.de` | `.20` backend-cloud | ✅ | Nextcloud Office backend (host-side) |
+| Nextcloud | **podman AIO container** (not `services.nextcloud`) | `cloud.nanulab.de` | `.30` frontend-cloud | ⬜ | NC 34 + Memories/Passwords/Notes/Talk/EuroOffice; AIO v13.4.1; sops env |
+| ~~Collabora~~ | ~~`services.collabora-online`~~ | — | 🗑 dropped 2026-08-12 | replaced by EuroOffice (AIO container) |
 | ~~Immich~~ | ~~`services.immich`~~ | — | 🗑 dropped 2026-08-08 | replaced by Nextcloud Memories (fetchNextcloudApp) |
 | ~~Vaultwarden~~ | ~~`services.vaultwarden`~~ | — | 🗑 dropped 2026-08-08 | replaced by Nextcloud Passwords (fetchNextcloudApp) |
 | PostgreSQL | `services.postgresql` | — | `.20` backend-cloud | ✅ | shared DB (nextcloud, immich) |
@@ -433,7 +437,7 @@ Quarterly: `nix flake update` → build → test → switch. Rollback via boot m
 - MeTube / Pinchflat (YouTube downloader)
 - IPTV
 - Headscale + headplane UI (both native, verified 26.05 — if declarative WG peer management ever becomes a burden; needs TCP 8443 forward, preauth keys or an OIDC IdP)
-- **Nextcloud Office powered by Euro-Office** (June 2026, ONLYOFFICE-based; not in nixpkgs — keep Collabora until it lands in a pinned channel; decision 2026-08-08)
+- **Nextcloud Office powered by Euro-Office** — ✅ **now via Nextcloud AIO podman** (2026-08-12). Not in nixpkgs; runs as an AIO container (`ghcr.io/euro-office/documentserver`). Replaces Collabora.
 - **Installer project** (`install.sh` on live ISO): fork repo → create GitHub repo on user's account → interactive Q&A (users/accounts/emails/aliases/apps/disks/API tokens) → generate config + sops → print manual steps. Assumes same stack (Resend/CF/INWX/WG/SNM). **v2 feature** (build after v1 done + fork). *(Note: Nextcloud accounts persist in its DB across reboot AND rebuild — installer only creates on first install.)*
 - **Website/blog NOT in v2** — v2 documents how to add your own blog. Hugo site itself is a v2 item.
 - DANE TLSA active once DS published at DENIC (§3.7)

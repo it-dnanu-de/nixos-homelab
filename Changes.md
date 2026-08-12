@@ -144,3 +144,10 @@ Dropped: GLM 5.2 (troubleshooter), Nemotron (weak per benchmark).
 - **Client access: WebDAV only** (2026-08-12).
 - Dell test box: rpool/{work,fast,slow} datasets mirror the 3 pools (same mountpoints).
 - Updated: OpenCode.md §2/§5, settings.nix paths (+/work), storage-layout.nix, disko.nix (work dataset). No system rebuild.
+
+## 2026-08-12 — Nextcloud moves to podman AIO (EuroOffice); everything else stays native
+
+- **Nextcloud → declarative podman container** (oci-containers backend=podman). Reason (verified): nixpkgs module is 2 majors behind (32 vs 34), and EuroOffice/Memories/Passwords are NOT packageable in nix — EuroOffice only exists as an AIO container (ghcr.io/euro-office/documentserver v9.3.2, confirmed in AIO v13.4.1). Replaces Collabora.
+- **Everything else stays native NixOS containers** — Jellyfin 10.11.11 + Sonarr/Radarr/Lidarr/Prowlarr are CURRENT in pinned 26.05 (verified), so no benefit to containerizing them.
+- Nextcloud AIO = mastercontainer + postgres + redis + apache + eurooffice (+ optional talk/collab). Declared via Nix (pinned images, sops env), not compose.
+- Docs: container model amended, cloud table (EuroOffice), service map (Nextcloud=podman, Collabora dropped), backlog. Removed stale Vaultwarden refs.
