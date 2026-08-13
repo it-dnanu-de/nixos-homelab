@@ -45,9 +45,11 @@
   services.openssh.settings.PasswordAuthentication = true;
   services.openssh.settings.KbdInteractiveAuthentication = true;
 
-  # Postgres backups — host postgres now only serves app DBs; Nextcloud's DB
-  # lives inside the podman AIO container (backed up by restic on /fast, not
-  # postgresqlBackup). Immich dropped (2026-08-08).
+  # Shared PostgreSQL (host) — serves host app DBs. Nextcloud's DB lives inside
+  # the podman AIO container (backed by restic, not postgresqlBackup).
+  services.postgresql.enable = true;
+
+  # Postgres backups — nightly dumps of host app DBs.
   services.postgresqlBackup = {
     enable = true;
     location = "/fast/backups/postgres";
