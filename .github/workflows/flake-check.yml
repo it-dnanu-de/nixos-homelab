@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  check:
+  flake-check:   # job name MUST match the required status check in branch protection
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
