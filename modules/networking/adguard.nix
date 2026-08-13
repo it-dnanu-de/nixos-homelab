@@ -67,6 +67,7 @@ in
           # currently settings.network.address (host 10.0.0.2).
           { domain = "*.${settings.domains.internal}"; answer = settings.network.address; enabled = true; }
           { domain = settings.domains.mail; answer = settings.network.address; enabled = true; }
+          { domain = "auth.${settings.domains.public}"; answer = settings.network.address; enabled = true; }
         ];
         safe_search.enabled = true;
         safe_search.bing = true;

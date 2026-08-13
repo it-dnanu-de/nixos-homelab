@@ -1,5 +1,26 @@
 # Changes.md — temporary session log (wiped into OpenCode.md at end of session)
 
+## 2026-08-13 — Auth direction: ZITADEL replaces Authentik
+
+### Decision (human-driven, 2026-08-13)
+- **ZITADEL replaces Authentik** as the IdP. Native `services.zitadel` in pinned `nixos-26.05` (package 2.71.7). No flake input, no Redis, no blueprints.
+- **D1:** `ExternalDomain` is singular. Issuer = `auth.dnanu.de` (public via tunnel so invite/first-login works off-VPN; AdGuard rewrite on LAN/VPN). `auth.nanulab.de` is a 301 bookmark alias only — never a second issuer.
+- **D2:** Profile stays `profile.dnanu.de` (already on the tunnel). oauth2-proxy callback = `/oauth2/callback`. A VPN-only profile page would deadlock new users.
+- Invite-only (`AllowRegister = false`): admin creates the user → init-code email → user sets their own password.
+- Profile page is **nginx + oauth2-proxy forward-auth**, not a custom IdP page. Identity = `X-Auth-Request-Preferred-Username`.
+- Shared host PostgreSQL (already listening on 127.0.0.1:5432). Do **not** set `enableTCPIP`.
+- OIDC clients instantiated one-at-a-time when that service is built. This milestone ships exactly one: oauth2-proxy.
+- Pass 2 still needed: deploy, create the `profile-page` OIDC app in the console, fill `clientID` + `zitadel_oidc_client_secret`.
+
+### Built (feat/zitadel-idp)
+- users.nix: first/last/email + `idpUsername` / `idpDisplayName` / `idpUsers`
+- sops: five ZITADEL secrets (master_key exactly 32 bytes)
+- zitadel.nix, oauth2-proxy.nix, profile-page.nix; ios-profile.nix deleted
+- wireguard render dirs keyed by idpUsername; AdGuard rewrite; tunnel + DNS CNAME
+
+---
+(previous session history preserved below)
+
 ## 2026-08-08 — Auth direction: Authentik replaces Authelia + user-provisioning design
 
 ### Decision (human-driven)

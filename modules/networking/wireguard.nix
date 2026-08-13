@@ -6,8 +6,8 @@
 # with real keypairs. v5: 10.0.80.0/24 subnet, server 10.0.80.2 (2026-08-08).
 # Peers derived from users.nix helpers (wgPeers/wgPeerNames).
 # Public keys in generated wireguard-pubkeys.nix.
-# Per-user QR renderer writes /var/lib/mobileprofile/wg/<user>/.
-# Served behind Authelia at profile.dnanu.de/<user>/.
+# Per-user QR renderer writes /var/lib/mobileprofile/wg/<idpUsername>/.
+# Served behind oauth2-proxy + ZITADEL at profile.dnanu.de/<idpUsername>/.
 {
   config,
   lib,
@@ -107,7 +107,9 @@ PEERCONF
   .warn { color: #cb2431; }
   .tier { font-size: 0.9rem; color: #666; margin-bottom: 1rem; }
   .logout { display: inline-block; margin-top: 1.5rem; font-size: 0.9rem; color: #666; }
-  .logout button { background: none; border: none; color: #666; cursor: pointer; font-size: 0.9rem; padding: 0; text-decoration: underline; }
+  details { max-width: 800px; margin-top: 1.5rem; }
+  details summary { cursor: pointer; font-weight: 600; }
+  details ol { padding-left: 1.25rem; }
 </style>
 </head>
 <body>
@@ -118,16 +120,16 @@ PEERCONF
 ${"\${peer_html}"}
 </table>
 <p><em>Scan QR in the WireGuard app → tap "Allow" → enable On-Demand (Wi‑Fi + Cellular).</em></p>
-<form class="logout" method="post" action="/logout" onsubmit="return doLogout(event)"><button type="submit">Log out</button></form>
-<script>
-function doLogout(e) {
-  e.preventDefault();
-  fetch('/logout', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({targetURL: location.origin + '/'}), credentials: 'same-origin' })
-    .then(function(r){ location.href = location.origin + '/'; })
-    .catch(function(){ location.href = location.origin + '/'; });
-  return false;
-}
-</script>
+<details>
+<summary>Setup guide — iOS / Android / PC</summary>
+<ol>
+  <li><strong>iOS:</strong> install WireGuard from the App Store → tap + → Create from QR code → scan the QR for this device → Allow → in the tunnel settings enable On-Demand for Wi‑Fi and Cellular.</li>
+  <li><strong>Android:</strong> install WireGuard from Play Store / F-Droid → + → Scan from QR code → name the tunnel → toggle it on. Optional: use the tile in Quick Settings.</li>
+  <li><strong>PC (Windows / macOS / Linux):</strong> install WireGuard → Add Tunnel → add from file → pick the <code>.conf</code> for this device → Activate. Split-tunnel is already set (only 10.0.0.0/16 goes through the VPN).</li>
+</ol>
+<p>Mail, calendar, contacts, and files are configured in the Nextcloud app (or native Mail / CalDAV / CardDAV / Files) — there is no .mobileconfig.</p>
+</details>
+<p class="logout"><a href="/logout">Sign out</a></p>
 </body>
 </html>
 INDEX
@@ -176,11 +178,10 @@ in
       BASE=/var/lib/mobileprofile/wg
       echo "wireguard-profile-render: starting (per-user)" >&2
 
-      # Clean up stale flat files from the pre-v2 renderer (old per-peer .conf/.png
-      # and the shared index.html). Only per-user dirs may exist now.
-      find "$BASE" -maxdepth 1 -type f -name '*.conf' -delete 2>/dev/null || true
-      find "$BASE" -maxdepth 1 -type f -name '*.png' -delete 2>/dev/null || true
-      rm -f "$BASE/index.html" 2>/dev/null || true
+      # Fully regenerate the tree every boot. Drops stale short-name dirs
+      # (pre-idpUsername) so admin cannot be served leftover paths.
+      rm -rf "$BASE"
+      mkdir -p "$BASE"
 
       # Derive server public key from the sops-decrypted private key
       SERVER_PRIV=/run/secrets/wireguard_server_private
@@ -195,7 +196,7 @@ in
     '' + concatMapStringsSep "\n" ({ name, value }: let userName = name; userPeers = value; in ''
       # ── User: ${userName} ──
       echo "  user ${userName} (${toString (builtins.length userPeers)} peer(s))" >&2
-      user_out="$BASE/${userName}"
+      user_out="$BASE/${users.idpUsername userName}"
       rm -rf "$user_out"
       mkdir -p "$user_out"
 

@@ -42,6 +42,9 @@ rec {
     # ── admin (10 slots: admin .0 network address, admin1 .1 router, admin2 .2 server, admin3-9 devices) ──
     admin = {
       tier = "admin";
+      first = "Admin";
+      last = null;
+      email = "admin@dnanu.de";
       devices = [
         { hostname = "admin";  mac = null;               role = "infra";   note = "network address (.0) — not a real device"; }
         { hostname = "admin1"; mac = null;               role = "infra";   note = "router (Speedport, .1) — not a real device"; }
@@ -59,6 +62,9 @@ rec {
     # ── dumitru (10 slots: dumitru .10 base, dumitru1-9 .11-.19 spare) ──
     dumitru = {
       tier = "user";
+      first = "Dumitru";
+      last = "Nanu";
+      email = "dumitru@dnanu.de";
       devices = [
         { hostname = "dumitru";  mac = "f6:5b:6b:f3:0e:87"; note = "iPhone 17 Pro (.10)"; }
         { hostname = "dumitru1"; mac = "TODO";               note = "TBS — fill MAC here (spare device .11)"; }
@@ -76,6 +82,9 @@ rec {
     # ── adela (10 slots: adela .20 base, adela1 .21 TV, adela2 .22 Air, adela3-9 spare) ──
     adela = {
       tier = "user";
+      first = "Adela";
+      last = "Nanu";
+      email = "adela@dnanu.de";
       devices = [
         { hostname = "adela";  mac = "fe:02:26:df:0c:50"; note = "iPhone XS (.20)"; }
         { hostname = "adela1"; mac = "00:c3:f4:ea:fe:a6"; note = "Samsung TV (.21)"; }
@@ -93,6 +102,9 @@ rec {
     # ── tiberiu (10 slots: tiberiu .30 base, tiberiu1-9 spare) ──
     tiberiu = {
       tier = "user";
+      first = "Tiberiu";
+      last = "Nanu";
+      email = "tiberiu@dnanu.de";
       devices = [
         { hostname = "tiberiu";  mac = "da:08:7b:fe:cf:d7"; note = "Galaxy S22U (.30)"; }
         { hostname = "tiberiu1"; mac = "TODO";               note = "TBS — fill MAC here (spare device .31)"; }
@@ -110,6 +122,9 @@ rec {
     # ── david (10 slots: david .40 base, david1 .41 Xbox, david2-9 spare) ──
     david = {
       tier = "user";
+      first = "David";
+      last = "Nanu";
+      email = "david@dnanu.de";
       devices = [
         { hostname = "david";  mac = "76:6f:b2:93:10:ce"; note = "iPhone 17 Pro Max (.40)"; }
         { hostname = "david1"; mac = "c4:9d:ed:c9:9a:13"; note = "Xbox One (.41)"; }
@@ -127,6 +142,9 @@ rec {
     # ── ramona (10 slots: ramona .50 base, ramona1-9 spare) ──
     ramona = {
       tier = "user";
+      first = "Ramona";
+      last = "Nanu";
+      email = "ramona@dnanu.de";
       devices = [
         { hostname = "ramona";  mac = "56:ea:b4:79:06:61"; note = "iPhone 11 (.50)"; }
         { hostname = "ramona1"; mac = "TODO";               note = "TBS — fill MAC here (spare device .51)"; }
@@ -144,6 +162,9 @@ rec {
     # ── tibisor (10 slots: tibisor .60 base, tibisor1-9 spare) ──
     tibisor = {
       tier = "user";
+      first = "Tibisor";
+      last = "Nanu";
+      email = "tibisor@dnanu.de";
       devices = [
         { hostname = "tibisor";  mac = "26:05:a5:6c:e2:56"; note = "iPhone 14 (.60)"; }
         { hostname = "tibisor1"; mac = "TODO";               note = "TBS — fill MAC here (spare device .61)"; }
@@ -161,6 +182,9 @@ rec {
     # ── iza (10 slots: iza .70 base, iza1-9 spare — ALL MACs TODO) ──
     iza = {
       tier = "user";
+      first = "Izabela";
+      last = "Dwilewicz";
+      email = "iza@dnanu.de";
       devices = [
         { hostname = "iza";  mac = "TODO"; note = "iPhone 15 (.70) — TBS: fill MAC here"; }
         { hostname = "iza1"; mac = "TODO"; note = "TBS — fill MAC here (spare device .71)"; }
@@ -178,6 +202,9 @@ rec {
     # ── kerem (10 slots: kerem .80 base, kerem1-9 spare — ALL MACs TODO) ──
     kerem = {
       tier = "user";
+      first = "Kerem";
+      last = "Demir";
+      email = "kerem@dnanu.de";
       devices = [
         { hostname = "kerem";  mac = "TODO"; note = "iPhone 16 Pro (.80) — TBS: fill MAC here"; }
         { hostname = "kerem1"; mac = "TODO"; note = "TBS — fill MAC here (spare device .81)"; }
@@ -195,6 +222,9 @@ rec {
     # ── hannah (10 slots: hannah .90 base, hannah1-9 spare — ALL MACs TODO) ──
     hannah = {
       tier = "user";
+      first = "Hannah";
+      last = "Chertes";
+      email = "hannah@dnanu.de";
       devices = [
         { hostname = "hannah";  mac = "TODO"; note = "iPhone 15 Pro (.90) — TBS: fill MAC here"; }
         { hostname = "hannah1"; mac = "TODO"; note = "TBS — fill MAC here (spare device .91)"; }
@@ -280,4 +310,38 @@ rec {
             } else null
         ) n
     ) (builtins.attrNames users)));
+
+  # ── IdP identity helpers (pure builtins — no lib at import time) ──
+  # Username = first.last (admin stays "admin"). email stays the current
+  # short-name mailbox; the first.last MAIL rename is a separate milestone.
+
+  toLower = s: builtins.replaceStrings
+    [ "A" "B" "C" "D" "E" "F" "G" "H" "I" "J" "K" "L" "M" "N" "O" "P" "Q" "R" "S" "T" "U" "V" "W" "X" "Y" "Z" ]
+    [ "a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o" "p" "q" "r" "s" "t" "u" "v" "w" "x" "y" "z" ]
+    s;
+
+  # idpUsername "dumitru" → "dumitru.nanu";  "admin" → "admin";  "iza" → "izabela.dwilewicz"
+  idpUsername = userName:
+    let u = users.${userName}; in
+    if u.last == null then userName
+    else "${toLower u.first}.${toLower u.last}";
+
+  # idpDisplayName "iza" → "Izabela Dwilewicz"
+  idpDisplayName = userName:
+    let u = users.${userName}; in
+    if u.last == null then u.first else "${u.first} ${u.last}";
+
+  # idpUsers :: [ { key; username; displayName; first; last; email; tier; isAdmin; } ]
+  idpUsers = builtins.map (key:
+    let val = users.${key}; in {
+      inherit key;
+      username = idpUsername key;
+      displayName = idpDisplayName key;
+      first = val.first;
+      last = val.last;
+      email = val.email;
+      tier = val.tier;
+      isAdmin = val.tier == "admin";
+    }
+  ) (builtins.attrNames users);
 }
