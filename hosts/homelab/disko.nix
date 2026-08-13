@@ -44,9 +44,9 @@
       datasets = {
         root = { type = "zfs_fs"; mountpoint = "/"; };
         nix  = { type = "zfs_fs"; mountpoint = "/nix"; };
-        work = { type = "zfs_fs"; mountpoint = "/work"; options.recordsize = "128K"; };
-        fast = { type = "zfs_fs"; mountpoint = "/fast"; options.recordsize = "128K"; };
-        slow = { type = "zfs_fs"; mountpoint = "/slow"; options.recordsize = "1M"; options.compression = "zstd"; };
+        work = { type = "zfs_fs"; mountpoint = "/work"; };
+        fast = { type = "zfs_fs"; mountpoint = "/fast"; };
+        slow = { type = "zfs_fs"; mountpoint = "/slow"; };
       };
     };
   };
