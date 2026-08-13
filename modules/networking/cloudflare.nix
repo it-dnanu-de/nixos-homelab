@@ -1,6 +1,6 @@
 # cloudflared — Cloudflare tunnel for public web surfaces.
-# OpenCode.md §3.6. Tunnels dnanu.de, www, autoconfig, and profile.dnanu.de
-# to local nginx. profile.dnanu.de uses https://127.0.0.1:443 (needs TLS + Authelia).
+# OpenCode.md §3.6. Tunnels dnanu.de, www, autoconfig, profile, and auth
+# to local nginx. profile/auth use https://127.0.0.1:443 (TLS at nginx).
 # Tunnel routes created once in CF dashboard per §12 (1% manual).
 { config, settings, ... }:
 {
@@ -18,6 +18,7 @@
         "autoconfig.${settings.domains.public}" = "http://127.0.0.1:8080";
         "mta-sts.${settings.domains.public}" = "http://127.0.0.1:8080";
         "profile.${settings.domains.public}" = "https://127.0.0.1:443";
+        "auth.${settings.domains.public}" = "https://127.0.0.1:443";
       };
       default = "http_status:404";
     };

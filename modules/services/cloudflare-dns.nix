@@ -90,6 +90,10 @@ let
       deleteRecord "$Z_DNANU" A "profile.${settings.domains.public}"
       upsert "$Z_DNANU" CNAME "profile.${settings.domains.public}" \
         "${settings.cloudflare.tunnelId}.cfargotunnel.com" true 1
+      # auth.dnanu.de — ZITADEL issuer, CNAME to tunnel (must not bypass nginx TLS)
+      deleteRecord "$Z_DNANU" A "auth.${settings.domains.public}"
+      upsert "$Z_DNANU" CNAME "auth.${settings.domains.public}" \
+        "${settings.cloudflare.tunnelId}.cfargotunnel.com" true 1
     fi
 
     upsert "$Z_DNANU" MX "${settings.domains.public}" "${settings.domains.mail}" false 120 10
