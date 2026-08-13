@@ -30,13 +30,10 @@
       b2_account_key = {};
       restic_password = {};
       nextcloud_admin_pass = {};
-      nextcloud_aio_env = {};   # TODO(build): AIO env file (admin URL, ports, etc.)
       slskd_env = {};
-      # Authentik (IdP) secrets — added at build time with the Authentik container
-      authentik_secret_key = {};
-      authentik_postgres_password = {};
-      # per-user per-service password hashes (user_<name>_pass_<service>)
-      # (Authelia + mobileca secrets removed 2026-08-08 — Authelia dropped, .mobileconfig dropped)
+      # (authentik_secret_key, authentik_postgres_password, nextcloud_aio_env,
+      #  user_<name>_pass_<service> added by the builder when Authentik/Nextcloud
+      #  are built — not registered until they exist in secrets.yaml)
     };
   };
 }
