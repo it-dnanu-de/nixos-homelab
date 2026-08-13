@@ -8,14 +8,14 @@
 |---|---|---|
 | **JOAT** (primary) | Qwen 3.7 Flash | Orchestrator + docs owner + generalist. The agent you actually talk to. Coordinates the role agents, owns README/AGENTS/Changes/TODO, opens PRs. |
 | **architect** | Claude Opus 5 | Plans, architecture, hard problems — the hardest-reasoning role, best model. Writes plans, not code. |
-| **builder** | GPT-5.6 Terra | Executes plans: NixOS modules, service config, multi-file changes. Near-top coding at great value. |
+| **builder** | Grok 4.6 | Executes plans: NixOS modules, service config, multi-file changes. Top agentic (58.7) + near-top coding (76.8) at $2/$6. |
 | **reviewer** | Kimi K3 | Security + quality review before merge. Top ELO, deep reasoning. |
 | **verifier** | DeepSeek V4 Flash | Confirms options/packages exist in pinned `nixos-26.05`. Cheap + agentic-strong. |
 | **deployer** | DeepSeek V4 Pro | Server rebuild/deploy on 10.0.0.2 + smoke-test. |
 | **troubleshooter** | Qwen 3.8 Max | Debugging when something breaks. Best agentic-per-dollar. |
 | **designer** | Muse Spark 1.2 | Websites + UI (mobile + desktop): Hugo, Authentik profile page, dashboards, any frontend. |
 
-Models are a lever: each role has a default, but JOAT picks the model per task. Agents are the contract; models are the cost/quality tradeoff. (Set chosen 2026-08-08 from OpenRouter Artificial-Analysis + Design Arena benchmarks.)
+Models are a lever: each role has a default, but JOAT picks the model per task. Agents are the contract; models are the cost/quality tradeoff. (Set chosen 2026-08-08 from OpenRouter Artificial-Analysis + Design Arena benchmarks; builder moved to Grok 4.6 on 2026-08-13 — higher agentic index than GPT-5.6 Terra at the same price.)
 
 ## Workflow: direct + PR-gated
 
