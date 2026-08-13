@@ -24,7 +24,9 @@
     ../../modules/networking/cloudflare.nix
     ../../modules/services/mail.nix
     ../../modules/services/cloudflare-dns.nix
-    # ios-profile.nix disabled (build target) — profile page moves into Authentik (OpenCode.md §10)
+    ../../modules/services/zitadel.nix
+    ../../modules/services/oauth2-proxy.nix
+    ../../modules/services/profile-page.nix
     ../../modules/system/users.nix
   ];
 
@@ -53,6 +55,6 @@
   services.postgresqlBackup = {
     enable = true;
     location = "/fast/backups/postgres";
-    databases = [ ];
+    databases = [ "zitadel" ];
   };
 }
