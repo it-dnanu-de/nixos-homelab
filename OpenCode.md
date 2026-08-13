@@ -42,7 +42,7 @@
 | Podcasts / comics / manga | **dropped** | — |
 
 **Container model (2026-08-08, amended 2026-08-12):** services split into **NixOS modules (in NixOS containers)** and **podman containers**:
-- **NixOS modules in NixOS containers** (infra + cloud + ops + media): Nginx, AdGuard, Kea, ddclient, cloudflared, CF DNS sync, Mail (SNM), Authentik (flake), Home Assistant, Glance, Beszel, Restic, PostgreSQL, Redis, VPN-Confinement, **Jellyfin, Prowlarr, Radarr, Sonarr, Lidarr, Readarr, Seerr, qBittorrent, SABnzbd, slskd**.
+- **NixOS modules in NixOS containers** (infra + cloud + ops + media): Nginx, AdGuard, Kea, ddclient, cloudflared, CF DNS sync, Mail (SNM), **ZITADEL** (native 26.05, host-side until the container milestone), Home Assistant, Glance, Beszel, Restic, PostgreSQL, Redis, VPN-Confinement, **Jellyfin, Prowlarr, Radarr, Sonarr, Lidarr, Readarr, Seerr, qBittorrent, SABnzbd, slskd**.
 - **Podman containers** (declared via `virtualisation.oci-containers.backend = "podman"`, pinned images, sops secrets): **Nextcloud AIO** only (NC module 2 majors behind; EuroOffice/Memories/Passwords only exist as AIO).
 - **Livrarr / Shelfarr / Mixarr**: **packaged by us** as NixOS modules (2026-08-12 ruling — more declarative than podman). Livrarr=Rust, Shelfarr=Ruby, Mixarr=TypeScript (all Nix-friendly). Follow the nixpkgs servarr packaging pattern (`pkgs/by-name/so/sonarr`). Until packaged, they run from source; packaging is part of the media milestone.
 - **Host (bare core, not containerized):** WireGuard (kernel), ZFS (kernel), container runtime.
@@ -54,7 +54,7 @@
 - **Web UI once, persists forever:** DB-level state lives in the container's `/var/lib` or `/fast` volume — configured once via web UI, persists across rebuild/reboot.
 - The web-UI-once step is part of the §12 "1% manual" list.
 
-**Cloud = self-hosted iCloud (2026-08-08) — Nextcloud is the ENTIRE cloud.** One login portal (Authentik) → invite → **profile install** (native iOS/Android clients) → **iCloud-style home launcher** showing all apps. Nextcloud replaces Immich + Vaultwarden entirely:
+**Cloud = self-hosted iCloud (2026-08-08) — Nextcloud is the ENTIRE cloud.** One login portal (ZITADEL) → invite → **profile install** (native iOS/Android clients) → **iCloud-style home launcher** showing all apps. Nextcloud replaces Immich + Vaultwarden entirely:
 
 | Service | Role | Notes |
 |---|---|---|
@@ -70,15 +70,15 @@
 
 **Nextcloud runtime — podman AIO (2026-08-12 ruling):** Nextcloud runs as a **declarative podman container** (`virtualisation.oci-containers.backend = "podman"`), not the nixpkgs module (which is 2 majors behind: pinned 32 vs upstream 34) and cannot do EuroOffice/Memories/Passwords. Uses **Nextcloud All-in-One** (AIO v13.4.1, `ghcr.io/nextcloud-releases/all-in-one`) + its containers (postgres, redis, apache, **eurooffice**, collab…). Declared via Nix (pinned images, sops env), not Docker Compose. Collabora dropped — EuroOffice replaces it.
 
-**Mobile (iOS):** native Mail/Calendar/Contacts/Files apps connect via IMAP/CalDAV/CardDAV/WebDAV (no mobileconfig — native config). Nextcloud app handles Photos (Memories)/Passwords/Notes/Talk. **Desktop:** Nextcloud web apps for all. **The iCloud-style home launcher** (app tile grid after Authentik login) is a separate surface from Glance (admin status dashboard) — user-facing apps only.
+**Mobile (iOS):** native Mail/Calendar/Contacts/Files apps connect via IMAP/CalDAV/CardDAV/WebDAV (no mobileconfig — native config). Nextcloud app handles Photos (Memories)/Passwords/Notes/Talk. **Desktop:** Nextcloud web apps for all. **The iCloud-style home launcher** (app tile grid after ZITADEL login) is a separate surface from Glance (admin status dashboard) — user-facing apps only.
 
 **Users — single source of truth (2026-08-08):** `users.nix` is the single source for ALL services. Each user profile carries: tier (admin/user/family), first/last name → **username = `first.last`** (e.g. `dumitru.nanu`), email (`<username>@dnanu.de`), timezone, device MACs, and per-service provisioning (mail, nextcloud, vault, HA, jellyfin). Every service module reads from `users.nix` — one place edits a user. **11 mailboxes** (hey@, admin@, + 9 family users), separate mailboxes per user, current alias set (hey@ 8 aliases + admin@ 5) kept. **All 10 users provisioned on everything**; no per-user opt-out — "mail is not user-choice". **`first.last` rename is a dedicated milestone** (2026-08-08).
 
-**Auth & user provisioning — Authentik (2026-08-08):** **Authentik replaces Authelia** as the IdP (accept heavier RAM on the Dell; prod 64GB solves it). Runs via the `nix-community/authentik-nix` flake (no `services.authentik` in pinned 26.05 — the flake is the module source). Provides: **self-service signup + invites** (the "iCloud-style" flow), **admin webUI** (users/groups/roles/service access), **full OIDC SSO** into Nextcloud, HA, Jellyfin, Glance, arrs (one login everywhere), password reset + recovery emails. **users.nix drives Authentik declaratively via blueprints** (YAML: users, groups, flows, providers) — new user in users.nix → blueprint → Authentik account + per-service provisioning. **Profile/WG-QR page lives inside Authentik** (custom page). The standalone provisioning portal idea is folded into Authentik's flows; devices/MACs still admin-managed in users.nix (MAC = LAN/DHCP identity; WireGuard uses its own generated keys).
+**Auth & user provisioning — ZITADEL (2026-08-13):** **ZITADEL replaces Authentik** as the IdP (human ruling 2026-08-13). Native `services.zitadel` in pinned `nixos-26.05` (package 2.71.7) — no flake input. Host-side for now (shared host PostgreSQL); drops into the `.10` system container when that milestone lands. **One ExternalDomain** (`auth.dnanu.de`) — public via the cloudflared tunnel so the invite/first-login flow works off-VPN; AdGuard rewrites the same name to `10.0.0.2` on LAN/VPN. `auth.nanulab.de` is a 301 bookmark alias only. Invite-only (`AllowRegister = false`): admin creates the user → ZITADEL mails an init code → user sets their own password. **OIDC SSO** into Nextcloud, HA, Jellyfin, Glance, arrs is instantiated **one client at a time** when that service is built (this milestone ships exactly one: oauth2-proxy for the profile page). Password reset + recovery emails via local postfix → Resend, From `app@dnanu.de`. **Profile/WG-QR page** is an nginx-served per-user directory gated by oauth2-proxy forward-auth against ZITADEL OIDC (not a custom IdP page). Devices/MACs still admin-managed in users.nix.
 
 **Memory layer (2026-08-08) — LIVE:** **engram v1.20.0** (single Go binary + SQLite, no Docker/Postgres/Node) installed on the Arch dev machine and wired into opencode via `engram setup opencode` (plugin + MCP stdio, auto-start HTTP server). Seeded with 9 core project-knowledge entries (vision, architecture, auth, media stack, users, email rule, monitoring, models, open issues). Agents save + retrieve via `engram save`/`engram search` (FTS keyword recall) — token-minimizing: agents pull only what they need instead of loading Memory.md whole. DB: `~/.engram/engram.db`. *Upgrade path if vector RAG is wanted later: OpenRouter `nvidia/nemotron-3-embed-1b:free` embeddings (2048-dim, free, verified) + a vector store. Embeddings on OpenRouter: 33 models via `output_modalities=embeddings`; most need extra providers. Multimodal (verified via MCP): most agent models accept image/file input; verifier + deployer text-only; Muse Spark 1.2 most capable.*
 
-**Password model (2026-08-08):** one password per user, applied to all services. Set by the user (self-service via Authentik signup/reset) or via the admin+user helper flow — the plaintext is never visible to the admin. Hashes per-service format live in sops (`user_<name>_pass_<service>`); services that can't read hash files (Jellyfin, HA) get the password set via their provisioning API. Password reset via recovery email → Authentik.
+**Password model (2026-08-08, IdP updated 2026-08-13):** one password per user, applied to all services. Set by the user (ZITADEL init-code / password reset) — the plaintext is never visible to the admin. Hashes per-service format live in sops (`user_<name>_pass_<service>`); services that can't read hash files (Jellyfin, HA) get the password set via their provisioning API. Password reset via recovery email → ZITADEL.
 
 **Email rule (2026-08-08):** **no server-initiated ALERT emails** to hey@ (watchdog/cron). Transactional emails users trigger (Nextcloud Passwords reset, Nextcloud share notifications) stay via local postfix → Resend relay, From `app@dnanu.de`. Alerts surface on the **Glance dashboard** instead.
 
@@ -141,7 +141,7 @@ Dell-specific: `services.logind.lidSwitch = "ignore"` (lid closed ≠ suspend �
 - **All services = NixOS containers** (`containers.<name>`, systemd-nspawn). Zone addressing:
   | Block | Zone | Contents | Reachability |
   |---|---|---|---|
-  | `10.0.10.0/24` | system/ops | nginx, mail, AdGuard, Kea, Authentik, ddclient, cloudflared, restic, Glance, Beszel | nginx + admin |
+  | `10.0.10.0/24` | system/ops | nginx, mail, AdGuard, Kea, ZITADEL, ddclient, cloudflared, restic, Glance, Beszel | nginx + admin |
   | `10.0.20.0/24` | backend-cloud | PostgreSQL, Redis, MariaDB | **host-side (no LAN IP)** |
   | `10.0.30.0/24` | frontend-cloud | Nextcloud (the ENTIRE cloud: files/photos/passwords/notes/mail/cal/contacts), HA | macvlan, via nginx |
   | `10.0.40.0/24` | backend-media | Sonarr, Radarr, Lidarr, Readarr, Livrarr, Prowlarr | **host-side (no LAN IP)** |
@@ -174,8 +174,8 @@ Router column total: **25/tcp + 51820/udp only**.
 - **97 peers fully pre-provisioned** (7 admin admin3-9-vpn + 90 user [user]+[user]1-9-vpn) with real keypairs — **v5 renumber to `10.0.80.x`** (was 10.0.10.x). Spare slots: MAC=TODO, QR pre-rendered; claim = fill MAC + rebuild. Public keys in `wireguard-pubkeys.nix` (committed). Private keys + PSKs in sops (194 keys). Keygen via `scripts/gen-wg-keys.sh`.
 - Endpoint `vpn.dnanu.de` (grey cloud, ddclient) — router forwards **UDP 51820 → 10.0.0.2** (host). WireGuard silently drops unauthenticated packets.
 - Client configs push `DNS = 10.0.10.2` (AdGuard container) and `AllowedIPs = 10.0.0.0/16` (whole internal space via tunnel); internet stays direct. **Server-routed P2P enabled** (clients reach each other + all zones via host, per 2026-08-08 ruling).
-- Reachability split: `*.nanulab.de` vhosts via nginx ACLs from `users.nix` (admin LAN 10.0.70.1-9 + VPN 10.0.80.3-9, user LAN 10.0.70.10-99 + VPN 10.0.80.3-99). AdGuard UI admin-tier. `profile.dnanu.de` reachable without VPN (cloudflared + Authentik).
-- Onboarding: `wireguard-profile-render` oneshot → per-user `.conf` + QR PNGs → `profile.dnanu.de/<user>/` behind Authentik. Admin page shows 7 QRs, users 10.
+- Reachability split: `*.nanulab.de` vhosts via nginx ACLs from `users.nix` (admin LAN 10.0.70.1-9 + VPN 10.0.80.3-9, user LAN 10.0.70.10-99 + VPN 10.0.80.3-99). AdGuard UI admin-tier. `profile.dnanu.de` and `auth.dnanu.de` reachable without VPN (cloudflared + ZITADEL / oauth2-proxy).
+- Onboarding: `wireguard-profile-render` oneshot → per-user `.conf` + QR PNGs → `profile.dnanu.de/<idpUsername>/` behind oauth2-proxy. Admin page shows 7 QRs, users 10.
 - Fallback: headscale + headplane (native, verified 26.05) if declarative WG peer management ever becomes a burden — §15.
 
 ### 3.4 Split-Horizon DNS — ✅ LOCKED (this is what makes iOS work)
@@ -203,7 +203,7 @@ IPv6 **stays enabled** (human ruling 2026-08-05: needed for mail + modern infra;
 - **Kea DHCPv6** (stateful ULA `fd10::/64`) + Speedport DHCPv6 (GUA) coexist — disjoint address spaces, both DNS → AdGuard. Android ignores DHCPv6 → covered by v4 DNS.
 
 ### 3.6 Cloudflare Tunnel (blogs only)
-`services.cloudflared.tunnels."<id>"` with `credentialsFile` from sops; ingress: `dnanu.de`, `www.dnanu.de`, `autoconfig.dnanu.de`, `mta-sts.dnanu.de` → `http://127.0.0.1:8080`, `profile.dnanu.de` → `https://127.0.0.1:443` (`originRequest.noTLSVerify=true`), default `http_status:404`. Tunnel is **config_src=local** (declarative — ingress lives in the NixOS-generated `cloudflared.yml`, never the dashboard). The account-scoped `cloudflare_account_token` (Account > Cloudflare Tunnel > Edit) in sops allows full tunnel management via API without the dashboard. **Lesson (2026-08-07):** touching a tunnel in the CF dashboard flips it to remote-managed (`config_src=cloudflare`) and cloudflared then ignores the local config file (all hostnames dead, 404). `config_src` is only settable at tunnel creation — recovery = recreate the tunnel via API with `config_src=local`, update `settings.nix` tunnelId + sops `cloudflared_tunnel_cred`, rebuild.
+`services.cloudflared.tunnels."<id>"` with `credentialsFile` from sops; ingress: `dnanu.de`, `www.dnanu.de`, `autoconfig.dnanu.de`, `mta-sts.dnanu.de` → `http://127.0.0.1:8080`, `profile.dnanu.de` + `auth.dnanu.de` → `https://127.0.0.1:443` (`originRequest.noTLSVerify=true`), default `http_status:404`. Tunnel is **config_src=local** (declarative — ingress lives in the NixOS-generated `cloudflared.yml`, never the dashboard). The account-scoped `cloudflare_account_token` (Account > Cloudflare Tunnel > Edit) in sops allows full tunnel management via API without the dashboard. **Lesson (2026-08-07):** touching a tunnel in the CF dashboard flips it to remote-managed (`config_src=cloudflare`) and cloudflared then ignores the local config file (all hostnames dead, 404). `config_src` is only settable at tunnel creation — recovery = recreate the tunnel via API with `config_src=local`, update `settings.nix` tunnelId + sops `cloudflared_tunnel_cred`, rebuild.
 
 ### 3.7 DNSSEC — ✅ LOCKED (Cloudflare-managed, zero NixOS config)
 - Enable DNSSEC on both Cloudflare zones (`dnanu.de`, `nanulab.de`). Algorithm: ECDSAP256SHA256 (CF-managed). Nameservers unchanged.
@@ -277,7 +277,7 @@ services.postfix = {
 | TXT | `_smtp._tls.dnanu.de` | `v=TLSRPTv1; rua=mailto:admin@dnanu.de` — TLS-RPT reporting (RFC 8460) |
 | TLSA | `_25._tcp.mail.dnanu.de` | `3 1 1 <auto-synced SPKI hash>` — DANE EE (RFC 6698), auto-updated via cloudflare-tlsa-sync |
 | — | `*.nanulab.de` / `nanulab.de` | **no public A records** (VPN-only; AdGuard rewrites locally — §3.4) |
-| CNAME | `dnanu.de`, `www`, `autoconfig`, `mta-sts` | `<tunnel-id>.cfargotunnel.com` (proxied) |
+| CNAME | `dnanu.de`, `www`, `autoconfig`, `mta-sts`, `profile`, `auth` | `<tunnel-id>.cfargotunnel.com` (proxied) |
 
 `autoconfig.dnanu.de/mail/config-v1.1.xml`: static XML (Thunderbird auto-setup) served by the blogs nginx vhost.
 
@@ -349,7 +349,7 @@ nixos-homelab/
 │   └── installer/         # v2: custom ISO w/ ssh key for nixos-anywhere (placeholder)
 └── modules/
     ├── networking/{acme,adguard,base,cloudflare,ddclient,kea,nginx,nginx-helpers,wireguard}.nix
-    ├── services/{cloudflare-dns,ios-profile,mail,nextcloud}.nix   # + per-service NixOS-container + podman AIO declarations
+    ├── services/{cloudflare-dns,mail,nextcloud,zitadel,oauth2-proxy,profile-page}.nix
     ├── system/{sops,storage-layout,users,zfs}.nix
 ```
 
@@ -357,7 +357,7 @@ nixos-homelab/
 
 ## 7. Secrets Inventory (sops-nix)
 
-`cloudflare_api_token`, `cloudflare_account_token`, `cloudflared_tunnel_cred`, `resend_api_key`, `mail_hey`, `mail_admin`, `mail_<user>` (9 family mailboxes, one per user), `airvpn_wg_conf`, `b2_account_id`, `b2_account_key`, `restic_password`, `nextcloud_admin_pass`, `slskd_env` (`SLSKD_SLSK_USERNAME/PASSWORD`), `authentik_secret_key`, `authentik_postgres_password`, `user_<name>_pass_<service>` (per-user per-service hashes), `wireguard_server_private`, `wireguard_peer_<hostname>-vpn_private`, `wireguard_peer_<hostname>-vpn_psk` (97 peers × 2 = **194** WG keys). *(booklore_db_password removed 2026-08-08; vaultwarden_admin_token removed 2026-08-08 — Vaultwarden dropped.)*
+`cloudflare_api_token`, `cloudflare_account_token`, `cloudflared_tunnel_cred`, `resend_api_key`, `mail_hey`, `mail_admin`, `mail_<user>` (9 family mailboxes, one per user), `airvpn_wg_conf`, `b2_account_id`, `b2_account_key`, `restic_password`, `nextcloud_admin_pass`, `slskd_env` (`SLSKD_SLSK_USERNAME/PASSWORD`), `zitadel_master_key` (exactly 32 bytes), `zitadel_env` (YAML: postgres User/Admin passwords only), `zitadel_postgres_password`, `zitadel_oidc_client_secret` (pass 2, from console), `oauth2_proxy_cookie_secret` (exactly 32 bytes), `user_<name>_pass_<service>` (per-user per-service hashes), `wireguard_server_private`, `wireguard_peer_<hostname>-vpn_private`, `wireguard_peer_<hostname>-vpn_psk` (97 peers × 2 = **194** WG keys). *(authentik_* removed 2026-08-13 — Authentik dropped for ZITADEL; booklore_db_password removed 2026-08-08; vaultwarden_admin_token removed 2026-08-08 — Vaultwarden dropped.)*
 
 ## 8. TLS
 
@@ -377,7 +377,7 @@ nixos-homelab/
 | cloudflared | `services.cloudflared` | — | `.10` system | ✅ | §3.6, config_src=local |
 | Mail | SNM `mailserver.*` | `mail.dnanu.de` | `.10` system | ✅ | §4, 11 mailboxes, verified green |
 | Cloudflare DNS sync | systemd service | — | `.10` system | ✅ | DNS/DKIM/TLSA/MTA-STS upsert |
-| Authentik | `nix-community/authentik-nix` flake (`services.authentik`) | `auth.dnanu.de` + `profile.dnanu.de` | `.10` system | ⬜ | IdP: self-service signup+invites, admin UI, OIDC SSO, blueprint-driven from users.nix; replaces Authelia |
+| ZITADEL | `services.zitadel` (native 26.05, 2.71.7) | `auth.dnanu.de` (public, tunnel) + `profile.dnanu.de` (public, tunnel) | host-side now; `.10` when containerized | ⬜ | IdP: invite-only, admin console, OIDC. Shared host PostgreSQL. oauth2-proxy gates the profile page. `auth.nanulab.de` = 301 alias |
 | Nextcloud | **podman AIO container** (not `services.nextcloud`) | `cloud.nanulab.de` | `.30` frontend-cloud | ⬜ | NC 34 + Memories/Passwords/Notes/Talk/EuroOffice; AIO v13.4.1; sops env |
 | ~~Collabora~~ | ~~`services.collabora-online`~~ | — | 🗑 dropped 2026-08-12 | replaced by EuroOffice (AIO container) |
 | ~~Immich~~ | ~~`services.immich`~~ | — | 🗑 dropped 2026-08-08 | replaced by Nextcloud Memories (AIO app store) |
@@ -403,12 +403,12 @@ nixos-homelab/
 | slskd | NixOS module + VPN netns | via VPN bridge IP | `.10` system | ✅ in | AirVPN netns; confirmed in stack (2026-08-08) |
 | VPN | `vpnNamespaces.wg` (VPN-Confinement) | — | host | ⬜ | `wireguardConfigFile`=sops; portMappings; openVPNPorts |
 
-## 10. Profile / WG-QR page — ✅ inside Authentik (2026-08-08)
+## 10. Profile / WG-QR page — nginx + oauth2-proxy + ZITADEL (2026-08-13)
 
-The `.mobileconfig` generator is **dropped** (2026-08-08 — iOS/Android users configure mail/calendar via Nextcloud app / DAVx5; no platform imbalance). The profile page lives **inside Authentik**:
-1. `profile.dnanu.de` is a custom Authentik page (OIDC-gated) showing the user's **WireGuard QRs** (all their device peers, rendered by `wireguard-profile-render`) + config downloads + a setup guide (iOS/Android/PC).
-2. Admin sees all QRs; users see their own. Admin page shows 7 admin QRs, user pages 10.
-3. Flow: VPN or LAN on → `profile.dnanu.de` → Authentik login → WG QR → WireGuard app → On-Demand. Mail/calendar via Nextcloud app (both platforms, equal).
+The `.mobileconfig` generator is **dropped** (2026-08-08 — iOS/Android users configure mail/calendar via Nextcloud app / DAVx5; no platform imbalance). The profile page is an **nginx-served per-user WireGuard directory**, gated by **oauth2-proxy forward-auth** against ZITADEL OIDC:
+1. `profile.dnanu.de` (public via the tunnel, no IP allowlist) serves `/var/lib/mobileprofile/wg/<idpUsername>/` — QRs + `.conf` downloads + a static iOS/Android/PC setup guide, rendered by `wireguard-profile-render`.
+2. Identity is `$upstream_http_x_auth_request_preferred_username` (static files: `proxy_set_header` is a no-op). Admin may read every user's dir; regular users only their own. Path traversal is blocked by named-capture equality.
+3. Flow: off-VPN or LAN → `profile.dnanu.de` → oauth2-proxy → ZITADEL login at `auth.dnanu.de` → `/<first.last>/` → WG QR → WireGuard app → On-Demand. Mail/calendar via Nextcloud app (both platforms, equal).
 4. Devices/MACs still admin-managed in `users.nix` (MAC = LAN/DHCP; WG uses its own generated keys).
 
 ## 11. Backups (Restic → Backblaze B2)
@@ -425,7 +425,7 @@ The `.mobileconfig` generator is **dropped** (2026-08-08 — iOS/Android users c
 **On the human's machine (once):** generate age keypair (private → USB + password manager); generate mobile CA; clone repo; edit `settings.nix`; `sops secrets/secrets.yaml` to fill §7; commit via PR.
 **Install:** boot NixOS ISO on Dell (ethernet) → start sshd, set password → `nix run github:nix-community/nixos-anywhere -- --flake .#homelab --extra-files <dir-with-age-key> root@<ip>` → disko formats, installs, reboots.
 **Day-2 flow:** PR merges to `main` → server: `cd /etc/nixos && git pull origin main && nixos-rebuild switch --flake .#homelab`. Rollback = `nixos-rebuild switch --rollback` or boot menu.
-**1% manual (~45 min):** disable Speedport DHCPv4 (+DHCPv6 if UI allows); switch dumitru iPhone off manual `10.0.0.3` → DHCP (Kea reservation hands it `10.0.0.10`); verify UDP 51820 forward (done 2026-08-05); keep Speedport DHCP pointing at AdGuard + IPv6 enabled; **Speedport v6 pass-through** (fixes internet.nl IPv6 — §3.5); fill iza/kerem/hannah MACs in `users.nix`; re-scan ALL WG QRs post-deploy; distribute Authentik + mail passwords (or self-service signup); optional `rm /var/lib/AdGuardHome/leases.json`; Nextcloud admin + link Mail app to local IMAP + install Memories/Passwords apps; Jellyfin admin + libraries; Prowlarr indexers; connect managers to downloaders; Seerr↔Jellyfin; HA onboarding; Beszel agent key; **mail-tester.com + internet.nl after mail deploy (done 2026-08-07 — see §4.1); flip DMARC to `p=reject` after 30 clean days; publish DS records at registrar (both zones, §3.7, activates DANE).**
+**1% manual (~45 min):** disable Speedport DHCPv4 (+DHCPv6 if UI allows); switch dumitru iPhone off manual `10.0.0.3` → DHCP (Kea reservation hands it `10.0.0.10`); verify UDP 51820 forward (done 2026-08-05); keep Speedport DHCP pointing at AdGuard + IPv6 enabled; **Speedport v6 pass-through** (fixes internet.nl IPv6 — §3.5); fill iza/kerem/hannah MACs in `users.nix`; re-scan ALL WG QRs post-deploy; **ZITADEL:** (a) first login at `auth.dnanu.de` as `admin` → rotate the bootstrap password; (b) create Project `nanulab` → Application `profile-page` (Web, Basic, Authorization Code + PKCE, redirect `https://profile.dnanu.de/oauth2/callback`, post-logout `https://profile.dnanu.de/` + `https://auth.dnanu.de/oidc/v1/end_session`) and copy client ID into `oauth2-proxy.nix` + client secret into sops `zitadel_oidc_client_secret`; (c) create the 9 family users → each receives an init-code email → sets their own password; optional `rm /var/lib/AdGuardHome/leases.json`; Nextcloud admin + link Mail app to local IMAP + install Memories/Passwords apps; Jellyfin admin + libraries; Prowlarr indexers; connect managers to downloaders; Seerr↔Jellyfin; HA onboarding; Beszel agent key; **mail-tester.com + internet.nl after mail deploy (done 2026-08-07 — see §4.1); flip DMARC to `p=reject` after 30 clean days; publish DS records at registrar (both zones, §3.7, activates DANE).**
 
 ## 13. Verification Suite (run after install / deploy)
 

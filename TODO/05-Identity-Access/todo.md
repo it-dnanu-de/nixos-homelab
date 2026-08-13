@@ -1,24 +1,31 @@
-# TODO — 05 Identity & Access (Authentik)
+# TODO — 05 Identity & Access (ZITADEL)
 
-**Status:** ⬜ rework (2026-08-08: Authelia → Authentik) · **Owner:** builder + architect · **Modules:** `modules/services/authentik.nix` (flake), `modules/networking/nginx-helpers.nix`
+**Status:** ~ pass 1 landed (2026-08-13: Authentik → ZITADEL) · **Owner:** builder + architect · **Modules:** `modules/services/zitadel.nix`, `oauth2-proxy.nix`, `profile-page.nix`
 
-> **Authentik replaces Authelia** (2026-08-08 ruling): IdP + self-service signup/invites + admin UI + OIDC SSO. Runs via `nix-community/authentik-nix` flake (no `services.authentik` in pinned 26.05). Heavier RAM — accepted for the Dell, solved by prod 64GB.
+> **ZITADEL replaces Authentik** (2026-08-13 ruling): native `services.zitadel` in pinned `nixos-26.05` (2.71.7). No flake input. Host-side for now; `.10` when containers land. Invite-only. One ExternalDomain: `auth.dnanu.de`.
 
-## Authentik (`authentik.nix` — flake `nix-community/authentik-nix`)
-- [ ] Add flake input `authentik-nix` (pinned, follows nixpkgs)
-- [ ] `services.authentik.enable` (via the flake module) + Postgres/Redis (shared DB containers, zone `.20`)
-- [ ] `environmentFile` from sops (secret key, postgres password)
-- [ ] **users.nix drives it via blueprints** (YAML: users, groups, flows, providers) — new user → blueprint → account + provisioning
-- [ ] **Self-service signup + one-time invites** (admin generates, role/tier baked in)
-- [ ] **Admin webUI** for users/groups/roles/service access
-- [ ] **OIDC SSO** into: Nextcloud, Vaultwarden, HA, Jellyfin, Glance, arrs (one login everywhere)
-- [ ] Password reset + recovery emails (via local postfix → Resend)
-- [ ] `auth.dnanu.de` (IdP UI) + guards `profile.dnanu.de`
+## ZITADEL (`zitadel.nix` — native 26.05)
+- [x] `services.zitadel.enable` + `tlsMode = "external"` + `openFirewall = false`
+- [x] Shared host PostgreSQL (`ensureDatabases`/`ensureUsers` + password oneshot) — no new DB instance
+- [x] `masterKeyFile` + `extraSettingsPaths` from sops (zitadel-owned)
+- [x] `ExternalDomain = auth.dnanu.de` (singular) + `auth.nanulab.de` 301 alias
+- [x] Invite-only (`LoginPolicy.AllowRegister = false`)
+- [x] Transactional SMTP via local postfix → Resend, From `app@dnanu.de`
+- [ ] **Pass 2 / 1% manual:** first login as `admin` → rotate bootstrap password
+- [ ] **Pass 2 / 1% manual:** create Project `nanulab` → Application `profile-page` (Web, Basic, Auth Code + PKCE); copy client ID + secret
+- [ ] **Pass 2 / 1% manual:** create the 9 family users → init-code email → user sets password
+- [ ] OIDC SSO into Nextcloud / HA / Jellyfin / Glance / arrs — **one client per service, when that service is built** (F17)
+- [ ] Containerize into `.10` (needs the container milestone — F16)
+- [ ] Declarative user provisioning via Management API (no blueprint equivalent — research)
 
-## Profile / WG-QR page (inside Authentik)
-- [ ] Custom Authentik page at `profile.dnanu.de`: WG QRs (wireguard-profile-render) + config downloads + setup guide (iOS/Android/PC)
-- [ ] Admin sees 7 admin QRs; users see their 10
-- [ ] `.mobileconfig` **dropped** (2026-08-08 — Nextcloud app for mail/cal on both platforms)
+## Profile / WG-QR page (nginx + oauth2-proxy)
+- [x] `oauth2-proxy.nix`: provider=`oidc`, issuer `https://auth.dnanu.de`, auth_request mode
+- [x] `profile-page.nix`: static per-user dir, identity from `X-Auth-Request-Preferred-Username`
+- [x] Admin sees every user's QRs; users see only their own; traversal blocked
+- [x] Setup guide (iOS/Android/PC) in generated `index.html`
+- [x] `.mobileconfig` **dropped** (2026-08-08)
+- [x] `ios-profile.nix` deleted
+- [ ] Fill `clientID` + `zitadel_oidc_client_secret` after the OIDC app exists
 - [ ] Re-scan all WG QRs post-v5 rename
 
 ## nginx ACLs (users.nix-driven)
@@ -29,5 +36,10 @@
 
 ## WireGuard peers
 - [x] 97 peers pre-provisioned, keys in sops, pubkeys in wireguard-pubkeys.nix
-- [ ] v5 renumber → .80.x, re-render QRs
+- [x] Render dirs keyed by `idpUsername` (dumitru→dumitru.nanu, iza→izabela.dwilewicz)
+- [ ] v5 renumber → .80.x, re-render QRs (separate milestone)
 - [ ] Spare slots claimed = fill MAC + rebuild
+
+## Still open (not this milestone)
+- [ ] `first.last` **mail** rename (email stays short-name mailbox here)
+- [ ] Making `auth.nanulab.de` a second issuer (impossible — F7/D1)
