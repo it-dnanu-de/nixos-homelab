@@ -24,7 +24,7 @@
     ../../modules/networking/cloudflare.nix
     ../../modules/services/mail.nix
     ../../modules/services/cloudflare-dns.nix
-    ../../modules/services/ios-profile.nix
+    # ios-profile.nix disabled (build target) — profile page moves into Authentik (OpenCode.md §10)
     ../../modules/system/users.nix
   ];
 
