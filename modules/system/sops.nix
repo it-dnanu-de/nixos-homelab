@@ -31,9 +31,15 @@
       restic_password = {};
       nextcloud_admin_pass = {};
       slskd_env = {};
-      # (authentik_secret_key, authentik_postgres_password, nextcloud_aio_env,
-      #  user_<name>_pass_<service> added by the builder when Authentik/Nextcloud
-      #  are built — not registered until they exist in secrets.yaml)
+
+      # ZITADEL — read by the zitadel process itself (no LoadCredential) → zitadel-owned
+      zitadel_master_key = { owner = "zitadel"; group = "zitadel"; mode = "0400"; };
+      zitadel_env         = { owner = "zitadel"; group = "zitadel"; mode = "0400"; };
+
+      # ZITADEL / oauth2-proxy — read by systemd as root (LoadCredential / oneshot)
+      zitadel_postgres_password  = {};
+      zitadel_oidc_client_secret = {};
+      oauth2_proxy_cookie_secret = {};
     };
   };
 }
