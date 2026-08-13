@@ -6,6 +6,7 @@
   "instructions": [
     "OpenCode.md",
     "README.md",
+    "AGENTS.md",
     "Changes.md",
     "Memory.md",
     ".gitignore"
@@ -17,19 +18,25 @@
       "enabled": true,
       "timeout": 30000
     },
+    "nixos": {
+      "type": "local",
+      "command": ["uvx", "mcp-nixos"],
+      "enabled": true,
+      "timeout": 30000
+    },
+    "openrouter": {
+      "type": "remote",
+      "url": "https://mcp.openrouter.ai/mcp",
+      "enabled": true,
+      "timeout": 30000,
+      "headers": {
+        "Authorization": "Bearer {env:OPENROUTER_API_KEY}"
+      }
+    },
     "github": {
       "type": "remote",
       "url": "https://api.githubcopilot.com/mcp/",
       "enabled": false,
-      "timeout": 30000
-    },
-    "resend": {
-      "type": "local",
-      "command": ["npx", "-y", "resend-mcp"],
-      "enabled": true,
-      "environment": {
-        "RESEND_API_KEY": "{env:RESEND_API_KEY}"
-      },
       "timeout": 30000
     },
     "ssh-homelab": {
@@ -70,6 +77,11 @@
       "branch": "nixos-26.05",
       "description": "Pinned nixpkgs channel. Verify every nixos option and package exists here before use."
     },
+    "nixos-containers": {
+      "repository": "NixOS/nixpkgs",
+      "branch": "nixos-26.05",
+      "description": "containers.<name> module (systemd-nspawn) options — the architecture runs ALL services as NixOS containers."
+    },
     "snm": {
       "repository": "https://gitlab.com/simple-nixos-mailserver/nixos-mailserver",
       "description": "Simple NixOS Mailserver (GitLab): accounts (renamed from loginAccounts), aliases, sieveScript, x509 certs, Resend relay workaround."
@@ -89,6 +101,14 @@
     "vpn-confinement": {
       "repository": "Maroka-chan/VPN-Confinement",
       "description": "Network-namespace VPN confinement for qBittorrent, SABnzbd, slskd."
+    },
+    "nixarr": {
+      "repository": "nix-media-server/nixarr",
+      "description": "NixOS media stack module (nix-media-server/nixarr) — arrs, Jellyfin, downloaders, VPN. Useful patterns for the media containers."
+    },
+    "mcp-nixos": {
+      "repository": "utensils/mcp-nixos",
+      "description": "The nixos MCP server (uvx mcp-nixos): searches 130K+ packages, 23K+ options, Home Manager, wiki, noogle, nix.dev, flakehub, binary cache. Use to verify any option/package against real NixOS data before writing."
     }
   },
   "permission": {

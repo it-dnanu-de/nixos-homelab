@@ -24,12 +24,7 @@
     ../../modules/networking/cloudflare.nix
     ../../modules/services/mail.nix
     ../../modules/services/cloudflare-dns.nix
-    ../../modules/services/ios-profile.nix
-    ../../modules/services/authelia.nix
-    ../../modules/services/nextcloud.nix
-    ../../modules/services/vaultwarden.nix
-    ../../modules/services/immich.nix
-    ../../modules/services/collabora.nix
+    # ios-profile.nix disabled (build target) — profile page moves into Authentik (OpenCode.md §10)
     ../../modules/system/users.nix
   ];
 
@@ -50,9 +45,14 @@
   services.openssh.settings.PasswordAuthentication = true;
   services.openssh.settings.KbdInteractiveAuthentication = true;
 
+  # Shared PostgreSQL (host) — serves host app DBs. Nextcloud's DB lives inside
+  # the podman AIO container (backed by restic, not postgresqlBackup).
+  services.postgresql.enable = true;
+
+  # Postgres backups — nightly dumps of host app DBs.
   services.postgresqlBackup = {
     enable = true;
     location = "/fast/backups/postgres";
-    databases = [ "nextcloud" "immich" ];
+    databases = [ ];
   };
 }

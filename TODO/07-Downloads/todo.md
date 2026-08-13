@@ -23,10 +23,10 @@
 - [ ] `/slow/downloads/sabnzbd`
 - [ ] Connect to indexers
 
-## slskd (`services.slskd`)
-- [ ] Confined
-- [ ] Creds via `environmentFile` = sops `slskd_env` (SLSKD_SLSK_USERNAME/PASSWORD)
-- [ ] `+ soularr` bridge timer (see 08-Arr-Stack)
+## slskd (`services.slskd`) — OPTIONAL (2026-08-08)
+- [ ] Decision: keep slskd as a music downloader (Lidarr→slskd for missing albums) or drop it (qBit/SAB cover everything)
+- [ ] If kept: confined, creds via `environmentFile` = sops `slskd_env` (SLSKD_SLSK_USERNAME/PASSWORD)
+- [ ] soularr bridge is DROPPED regardless (no beets/soularr layer — see 08)
 
 ## Shared
 - [ ] `media` supplementary group on download dirs

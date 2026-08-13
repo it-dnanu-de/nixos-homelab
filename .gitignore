@@ -22,3 +22,6 @@ secrets/*.plain*
 .idea/
 .vscode/
 .flake.nix
+
+# nix build output symlink
+result

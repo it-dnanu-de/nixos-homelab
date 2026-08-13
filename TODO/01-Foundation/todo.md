@@ -1,6 +1,6 @@
 # TODO — 01 Foundation (flake, settings, users, secrets)
 
-**Status:** ✅ done and deployed (gen 72) · **Owner:** nixos-builder · **File refs:** `flake.nix`, `settings.nix`, `users.nix`, `modules/system/sops.nix`, `secrets/secrets.yaml`, `.sops.yaml`, `scripts/gen-wg-keys.sh`, `wireguard-pubkeys.nix`
+**Status:** ✅ done and deployed (gen 72) · **Owner:** builder · **File refs:** `flake.nix`, `settings.nix`, `users.nix`, `modules/system/sops.nix`, `secrets/secrets.yaml`, `.sops.yaml`, `scripts/gen-wg-keys.sh`, `wireguard-pubkeys.nix`
 
 ## Flake
 - [x] `flake.nix` pins nixpkgs `nixos-26.05` + sops-nix + disko + vpn-confinement + simple-nixos-mailserver
@@ -9,7 +9,7 @@
 
 ## Settings (`settings.nix`)
 - [x] domains (public, internal, mail), hostname, hostId
-- [x] IPs (10.0.0.2/24, ULA fd10::2/64), gateway, WireGuard server IP + forwardedPort
+- [x] IPs (10.0.0.2/16 host, ULA fd10::2/64), gateway, container zones (§3.1), WG server 10.0.80.2
 - [x] cloudflare.tunnelId → `734c3fa5` (local-config tunnel, 2026-08-07)
 - [x] timeZone
 - [ ] `sshPubKey` placeholder — **human must set real key**
@@ -26,7 +26,7 @@
 - [x] `secrets/secrets.yaml` encrypted, public-safe
 - [x] Registered in `modules/system/sops.nix`
 - [x] `cloudflare_account_token` added 2026-08-07 (tunnel ops)
-- [ ] Fill remaining `REPLACE_ME`: `airvpn_wg_conf`, `restic_password`, `nextcloud_admin_pass`, `vaultwarden_admin_token`, `slskd_env`, `booklore_db_password`
+- [ ] Fill remaining `REPLACE_ME`: `airvpn_wg_conf` (after AirVPN subscription), `restic_password` (B2 backup build). `nextcloud_admin_pass` + `vaultwarden_admin_token` are set. `slskd_env` kept (slskd optional). `booklore_db_password` removed 2026-08-08.
 
 ## WireGuard keygen (`scripts/gen-wg-keys.sh`)
 - [x] Idempotent two-pass v3→v4 rename

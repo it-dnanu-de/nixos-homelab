@@ -1,0 +1,19 @@
+name: flake-check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  flake-check:   # job name MUST match the required status check in branch protection
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@v13
+      - name: nix flake check
+        # Eval-only gate. The full system build is verified on the server
+        # (10.0.0.2) where nix lives — a cold GitHub-Actions toplevel build
+        # (kernel/ZFS/initrd) takes 10+ min and is redundant with the server build.
+        run: nix flake check --all-systems

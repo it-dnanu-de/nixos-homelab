@@ -51,25 +51,29 @@
     # final reject rule).  Each uses explicit -w-wrapped iptables/ip6tables
     # because source subnets differ between address families.
     # wg0 is already trustedInterfaces and needs no extra rules here.
+    # LAN scope is 10.0.0.0/16 (covers all 9 container zones, §3.1).
     extraCommands = ''
       # TCP 53 (AGH DNS), 80 (HTTP→HTTPS redirect), 443 (nginx TLS),
       # 465 (submission SMTPS), 587 (submission), 993 (IMAPS)
       # — scoped to LAN / ULA / link-local.
-      iptables  -w -A nixos-fw -p tcp -m multiport --dports 53,80,443,465,587,993 -s 10.0.0.0/24 -j nixos-fw-accept
+      iptables  -w -A nixos-fw -p tcp -m multiport --dports 53,80,443,465,587,993 -s 10.0.0.0/16 -j nixos-fw-accept
       ip6tables -w -A nixos-fw -p tcp -m multiport --dports 53,80,443,465,587,993 -s fd10::/64  -j nixos-fw-accept
       ip6tables -w -A nixos-fw -p tcp -m multiport --dports 53,80,443,465,587,993 -s fe80::/64  -j nixos-fw-accept
 
       # UDP 53 (AGH DNS) — same scope
-      iptables  -w -A nixos-fw -p udp --dport 53 -s 10.0.0.0/24 -j nixos-fw-accept
+      iptables  -w -A nixos-fw -p udp --dport 53 -s 10.0.0.0/16 -j nixos-fw-accept
       ip6tables -w -A nixos-fw -p udp --dport 53 -s fd10::/64  -j nixos-fw-accept
       ip6tables -w -A nixos-fw -p udp --dport 53 -s fe80::/64  -j nixos-fw-accept
 
       # UDP 67 (Kea DHCPv4) — LAN unicast + DHCPDISCOVER broadcast (src 0.0.0.0:68)
-      iptables -w -A nixos-fw -p udp --dport 67 -s 10.0.0.0/24 -j nixos-fw-accept
+      iptables -w -A nixos-fw -p udp --dport 67 -s 10.0.0.0/16 -j nixos-fw-accept
       iptables -w -A nixos-fw -p udp --dport 67 -s 0.0.0.0 -d 255.255.255.255 -j nixos-fw-accept
 
       # UDP 547 (Kea DHCPv6) — link-local scope (mirrors existing DHCPv6-client rule)
       ip6tables -w -A nixos-fw -p udp --dport 547 -s fe80::/64 -j nixos-fw-accept
+
+      # TODO(build): zone isolation — nftables default-deny between the 9 zones
+      # (§3.1): frontend→backend, backend→DB, HA→IoT, nginx→all. Backends host-side.
     '';
   };
 }

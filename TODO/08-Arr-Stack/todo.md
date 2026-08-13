@@ -1,34 +1,38 @@
-# TODO — 08 Arr Stack
+# TODO — 08 Arr Stack (backend-media — NixOS modules in NixOS containers)
 
-**Status:** ⬜ not started (build step 6) · **Owner:** nixos-builder · **Modules:** `modules/services/arr-stack.nix`
+**Status:** ⬜ not started · **Owner:** builder + architect · **Modules:** per-service NixOS container declarations
 
-> Media automation: request → download → organize → metadata → play (R1 "feels like Netflix"). All native `services.<name>` modules in pinned 26.05.
+> Media automation: request → manager → Prowlarr → downloader → manager organizes → Jellyfin → LiquidFin.
+> Architecture (2026-08-12): **media stack runs as NixOS modules inside NixOS containers** (`containers.<name>`, systemd-nspawn). Backend-media zone `10.0.40.0/24` (host-side, no LAN IP). **Livrarr/Shelfarr/Mixarr are PACKAGED BY US** (they have no NixOS module — Rust/Ruby/TS respectively).
 
-## Core *arrs
-- [ ] **Sonarr** — TV: NFO + poster → Jellyfin
-- [ ] **Radarr** — Movies: NFO + poster → Jellyfin
-- [ ] **Lidarr** — Music: organizes → beets perfects → Navidrome
-- [ ] **Prowlarr** — indexers, shared across *arrs
-- [ ] **Bazarr** — subtitles
-- [ ] **Readarr** ⚠️ archived upstream — pin package, metadata API → `rreading-glasses` mirror; migration note in README
-- [ ] Connect all *arrs to qBittorrent/SABnzbd (1% manual)
-- [ ] Prowlarr indexers (1% manual)
-- [ ] Hardlink completion into `/slow/shared-media`
+## Backend-media containers (zone .40 — host-side)
+- [ ] **Radarr** — movies manager (`services.radarr`)
+- [ ] **Sonarr** — TV manager (`services.sonarr`)
+- [ ] **Lidarr** — music manager (`services.lidarr`)
+- [ ] **Readarr** — books arr, pinned + rreading-glasses mirror (`services.readarr`)
+- [ ] **Livrarr** — books/audiobooks manager — **package by us** (Rust, kkodecs/livrarr, follow nixpkgs servarr pattern)
+- [ ] **Prowlarr** — indexer manager (`services.prowlarr`)
 
-## Seerr (`services.seerr`)
-- [ ] `requests.nanulab.de` (VPN-only) — user-facing request portal
-- [ ] Connect to Sonarr/Radarr + Jellyfin (1% manual)
+## Frontend-media containers (zone .50 — macvlan, via nginx)
+- [ ] **Jellyfin** — the ONLY player (`services.jellyfin`)
+- [ ] **Seerr** — movies/TV requests (`tv.nanulab.de`, `services.seerr`)
+- [ ] **Mixarr** — music requests (`music.nanulab.de`) — **package by us** (TypeScript, aquantumofdonuts/mixarr)
+- [ ] **Shelfarr** — books/audiobooks requests (`books.nanulab.de`) — **package by us** (Ruby, Pedro-Revez-Silva/shelfarr)
 
-## beets (`pkgs.beets`)
-- [ ] systemd service + YAML config (fully declarative in Nix)
-- [ ] Music tag post-processor (Lidarr organizes, beets perfects)
-- [ ] `/slow/shared-media/audio/music` as library
+## Container pattern (NixOS containers)
+- [ ] `containers.<name> = { privateNetwork = true; hostAddress = "<zone gw>"; localAddress = "<zone ip>"; }`
+- [ ] Each container: its own `services.*` config, state in `/var/lib` (NixOS containers), media on `/slow`
+- [ ] Backends host-side (no LAN IP); frontends macvlan
+- [ ] nginx (single ingress) proxies → frontend containers; admin vhosts → backend containers
+- [ ] **Users declarative:** per-service accounts via occ/CLI oneshots at first boot (from users.nix)
 
-## soularr (systemd timer, Python)
-- [ ] Bridges Lidarr ↔ slskd for missing album searches
-- [ ] Timer + service units
+## Packaging the trio (Livrarr/Shelfarr/Mixarr)
+- [ ] Livrarr (Rust): `kkodecs/livrarr` — package via nixpkgs servarr pattern (`pkgs/by-name/so/sonarr` as template)
+- [ ] Mixarr (TS): `aquantumofdonuts/mixarr` — same
+- [ ] Shelfarr (Ruby): `Pedro-Revez-Silva/shelfarr` — same
+- [ ] Verify each builds + registers a `services.<name>` module
 
 ## Shared
-- [ ] nginx vhosts: `*.nanulab.de` per service (user-tier ACL)
-- [ ] Restic include of app state
-- [ ] Kometa **dropped** (ruling R1 — no Plex; *arrs write NFO directly)
+- [ ] Zone isolation rules (frontend-media → backend-media, backend-media → downloaders, nginx → all)
+- [ ] Restic include of container state
+- [ ] `media` group for shared dirs

@@ -44,6 +44,7 @@
       datasets = {
         root = { type = "zfs_fs"; mountpoint = "/"; };
         nix  = { type = "zfs_fs"; mountpoint = "/nix"; };
+        work = { type = "zfs_fs"; mountpoint = "/work"; };
         fast = { type = "zfs_fs"; mountpoint = "/fast"; };
         slow = { type = "zfs_fs"; mountpoint = "/slow"; };
       };

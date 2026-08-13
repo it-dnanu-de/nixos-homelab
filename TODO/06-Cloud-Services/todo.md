@@ -1,45 +1,32 @@
-# TODO — 06 Cloud Services
+# TODO — 06 Cloud Services (self-hosted iCloud — Nextcloud is the ENTIRE cloud)
 
-**Status:** ✅ done (deployed gen 78, declarative fixes gen 81) · **Owner:** nixos-builder · **Modules:** `modules/services/{nextcloud,collabora,immich,vaultwarden}.nix`, `nginx-helpers.nix`
+**Status:** ~ rework (2026-08-08/12: Nextcloud becomes the whole cloud, runs as podman AIO; Immich + Vaultwarden dropped) · **Owner:** builder + architect · **Modules:** `modules/services/nextcloud.nix` (podman AIO)
 
-> Build step 5 in OpenCode.md §12. All options/packages verified in pinned 26.05. RAM-heavy four on the Dell: Immich, Nextcloud+Collabora, Jellyfin, Booklore.
+> **Nextcloud = the self-hosted iCloud (2026-08-08).** One Authentik login → invite → native iOS/Android clients (mail/cal/contacts/files via IMAP/CalDAV/CardDAV/WebDAV) → iCloud-style launcher. Runs as **podman AIO** (not the nixpkgs module — 2 majors behind). Drop Immich + Vaultwarden. Memories + Passwords + EuroOffice install from the AIO app store.
 
-## Nextcloud (`services.nextcloud`) — `cloud.nanulab.de`
-- [x] Module + PostgreSQL + Redis auto-provisioned
-- [x] `extraApps`: mail, calendar, contacts, **richdocuments** (Nextcloud Office)
-- [x] `adminpassFile` from sops
-- [x] `maxUploadSize = "16G"` + PHP-FPM RAM-tuned (`pm=ondemand, max_children=8`)
-- [x] nginx user-tier vhost + ACL (merged on module's auto-vhost)
-- [x] CalDAV/CardDAV/WebDAV endpoints (for mobile profile)
-- [x] `postgresqlBackup` nightly → `/fast/backups/postgres`
-- [x] Declarative warning fixes: maintenance window 02:30, phone region DE, serverId, log_type=file, opcache buffer 32
-- [x] **Nextcloud Office → Collabora** wired: richdocuments 10.3.0 + wopi_url=`https://office.nanulab.de` (occ oneshot, activate-config clean)
-- [ ] Nextcloud Mail app linked to local IMAP (1% manual: login → link `mail.dnanu.de:993` as hey@)
-- [ ] **Declarative account creation** — human requested (not built; solution design pending)
-- [ ] 2FA: skipped by human ruling (VPN-only); can add TOTP app later
+## Nextcloud — podman AIO — `cloud.nanulab.de`
+- [ ] `virtualisation.oci-containers.backend = "podman"`
+- [ ] Nextcloud AIO container (`ghcr.io/nextcloud-releases/all-in-one:v13.4.1`, pinned) + sops env
+- [ ] AIO sub-containers: postgres, redis, apache, **eurooffice** (`ghcr.io/euro-office/documentserver:v9.3.2`)
+- [ ] Loopback ports → nginx ingress (user-tier ACL)
+- [ ] **EuroOffice** replaces Collabora (Office)
+- [ ] Apps from AIO app store: **Memories** (photos, replaces Immich), **Passwords** (replaces Vaultwarden), Notes, Talk (⚠️ TURN decision pending)
+- [ ] `defaultapp = "dashboard"` (iCloud-style landing)
+- [ ] **iCloud-style launcher** (app tile grid after Authentik login — user-facing only; separate from Glance admin dashboard)
+- [ ] `/fast/users/<user>` as Nextcloud data dir + Memories index
 
-## Collabora Online (`services.collabora-online`) — `office.nanulab.de`
-- [x] Native module, port 9980, `ssl.enable=false` + `ssl.termination=true` (nginx terminates)
-- [x] WOPI allowlist scoped to `cloud.nanulab.de`
-- [x] Discovery endpoint verified (200, 39,938-byte XML)
-- [x] Nextcloud Office connected (richdocuments wopi_url)
+## Dropped (2026-08-08/12)
+- 🗑 **Immich** → replaced by Nextcloud Memories
+- 🗑 **Vaultwarden** → replaced by Nextcloud Passwords
+- 🗑 **Collabora** → replaced by EuroOffice (AIO)
+- 🗑 mobileconfig → native iOS/Android clients connect directly (IMAP/CalDAV/CardDAV/WebDAV)
 
-## Immich (`services.immich`) — `photos.nanulab.de`
-- [x] `mediaLocation = /fast/immich`, ML **disabled** (Dell CPU)
-- [x] PostgreSQL (pgvector+vchord) + Redis auto-provisioned, nightly dump
-- [x] `client_max_body_size 500M`
-- [ ] Admin account creation (1% manual web UI)
-
-## Vaultwarden (`services.vaultwarden`) — `vault.nanulab.de`
-- [x] SQLite, `SIGNUPS_ALLOWED=false`, WebSocket endpoints
-- [x] `ADMIN_TOKEN` = **Argon2id PHC** in sops (fixes plaintext warning)
-- [x] Admin-page settings declared as env config: SMTP via local postfix :25 (loopback relay → Resend), `ENABLE_PUSH_NOTIFICATION=false`, DOMAIN
-- [x] nginx vhost + user ACL
-- [ ] Admin portal login + any final tweaks (1% manual)
+## Native client config (mobile/desktop)
+- [ ] iOS: Mail (IMAP/SMTP), Calendar (CalDAV), Contacts (CardDAV), Files (WebDAV) + Nextcloud app (Memories/Passwords/Notes/Talk)
+- [ ] Desktop: Nextcloud web apps (Files/Mail/Calendar/Contacts/Memories/Passwords/Notes/Talk)
+- [ ] Document the exact per-platform setup on the launcher/profile page
 
 ## Shared
-- [x] nginx-helpers.nix refactor (ACL + mkVhost shared)
-- [x] All 4 vhosts live + verified
-- [ ] Add all to restic include (`/var/lib` state) — step 8
-- [ ] `media` group for services that touch /fast (with §5 file-structure approval)
-- [ ] Declarative file structure §5 — **printed, awaiting human approval**
+- [ ] nginx user-tier vhost (frontend-cloud zone .30)
+- [ ] postgresqlBackup nightly → /fast/backups/postgres
+- [ ] restic include `/fast` (Nextcloud files + Memories)

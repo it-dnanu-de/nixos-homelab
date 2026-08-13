@@ -1,7 +1,6 @@
 # TODO — 13 Deployment
 
 **Status:** ~ partial · **Owner:** deployer · **File refs:** `hosts/homelab/`, `hosts/installer/`, skills/deployment
-
 ## Installer ISO (`hosts/installer/`)
 - [ ] Custom ISO with ssh key for nixos-anywhere (currently just `.gitkeep`)
 - [ ] SSH password auth enabled on ISO (per human ruling)
@@ -22,11 +21,11 @@
 - [ ] Verify UDP 51820 forward (done 2026-08-05 ✅)
 - [ ] Fill iza/kerem/hannah MACs
 - [ ] Re-scan ALL WG QRs post-deploy
-- [ ] Distribute Authelia passwords (10 users)
+- [ ] Distribute Authelia + mail passwords (10 users + 9 family mailboxes)
 - [ ] Optional: `rm /var/lib/AdGuardHome/leases.json`
-- [ ] Revoke Tailscale OAuth + remove machines (Tailscale console)
+- [x] Tailscale fully removed (OAuth revoked + machines gone) — done 2026-08-05/06
 - [ ] Nextcloud admin + Mail app → local IMAP
-- [ ] Jellyfin/Navidrome/ABS/Booklore admin + libraries
+- [ ] Jellyfin admin + libraries
 - [ ] Prowlarr indexers; connect *arrs to downloaders
 - [ ] Seerr ↔ Jellyfin; Vaultwarden admin; HA onboarding; Beszel agent key
 - [x] mail-tester.com + internet.nl — **run 2026-08-07** (mail-tester 0.1 SPF/DKIM/DMARC pass; MECSA 100s; internet.nl dnanu 90%, mail 61% — only IPv6 fail). Flip DMARC reject after 30 clean days.

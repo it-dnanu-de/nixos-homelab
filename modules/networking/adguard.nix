@@ -25,9 +25,9 @@ let
       use_global_settings = true;
     }
   ) users.users) ++ [{
-    # Static infra entry: router (10.0.0.1) + server LAN (10.0.0.2) + server VPN (10.0.10.2)
+    # Static infra entry: router (10.0.0.1) + server LAN (10.0.0.2) + server VPN (10.0.80.2, WG v5)
     name = "infra";
-    ids = [ "10.0.0.1" "10.0.0.2" "10.0.10.2" ];
+    ids = [ "10.0.0.1" "10.0.0.2" "10.0.80.2" ];
     tags = [ "user_admin" ];
     use_global_settings = true;
   }];
@@ -62,7 +62,9 @@ in
         protection_enabled = true;
         filtering_enabled = true;
         rewrites = [
-          # Wildcard matches apex + all subdomains (*.nanulab.de → 10.0.0.2)
+          # Wildcard matches apex + all subdomains (*.nanulab.de → nginx ingress container)
+          # TODO(build): target the nginx ingress container (10.0.10.5) once containerized;
+          # currently settings.network.address (host 10.0.0.2).
           { domain = "*.${settings.domains.internal}"; answer = settings.network.address; enabled = true; }
           { domain = settings.domains.mail; answer = settings.network.address; enabled = true; }
         ];

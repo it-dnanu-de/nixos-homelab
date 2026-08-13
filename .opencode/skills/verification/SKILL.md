@@ -9,25 +9,27 @@ Run after install or any network/mail/storage-affecting change. Report PASS / FA
 
 ## Connectivity & storage
 ```
-zpool status                                  # pools healthy
-dig @10.0.0.2 mail.dnanu.de                   # split-horizon: -> 10.0.0.2
-dig mail.dnanu.de @1.1.1.1                    # public: -> home IP (grey cloud)
-dig @10.0.0.2 *.nanulab.de                    # AdGuard rewrite -> 10.0.0.2
+zpool status                                  # pools healthy (/work /fast /slow)
+dig @10.0.10.2 mail.dnanu.de                   # AdGuard container: split-horizon -> 10.0.10.11 (mail)
+dig mail.dnanu.de @1.1.1.1                     # public: -> home IP (grey cloud)
+dig @10.0.10.2 *.nanulab.de                    # AdGuard rewrite -> nginx ingress
 ```
 
 ## Mail
 ```
 swaks --to hey@dnanu.de --server <home-ip>    # inbound port 25 from outside
-# send from iOS -> check Resend dashboard     # outbound relay works
+# send from iOS -> check delivery              # outbound relay works
 # verify SPF/DKIM/DMARC records + DNSSEC for dnanu.de and nanulab.de
 ```
 
-## Services (over Tailscale)
+## Services (over VPN / LAN — *.nanulab.de is split-horizon)
 ```
-curl -I https://cloud.nanulab.de
-curl -I https://vault.nanulab.de
-curl -I https://home.nanulab.de
-# each *.nanulab.de service returns 200/3xx
+curl -kI https://cloud.nanulab.de              # Nextcloud AIO
+curl -kI https://media.nanulab.de              # Jellyfin
+curl -kI https://tv.nanulab.de                 # Seerr
+curl -kI https://music.nanulab.de              # Mixarr
+curl -kI https://books.nanulab.de              # Shelfarr
+# each *.nanulab.de service returns 200/3xx; guest IP -> 403; dead names -> 404
 ```
 
 ## Security
@@ -36,7 +38,9 @@ curl -I https://home.nanulab.de
 restic check                                  # backup integrity
 systemctl --failed                            # must be empty
 # lid-close test on Dell (must NOT suspend)
+# ZONE ISOLATION: guest (10.0.90.x) -> container denied; IoT (10.0.60.x) -> cloud denied;
+# frontend (10.0.30/.50) -> its backend allowed; WG peers at 10.0.80.x
 ```
 
 ## DNSSEC
-`dig +dnssec dnanu.de SOA` and `dig +dnssec nanulab.de SOA` -> AD flag set, RRSIG present, no SERVFAIL.
+`dig +dnssec +adflag dnanu.de @9.9.9.9` (AD bit set), `delv dnanu.de`, and the same for `nanulab.de`.
