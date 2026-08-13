@@ -12,10 +12,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: DeterminateSystems/nix-installer-action@v13
-      - uses: DeterminateSystems/magic-nix-cache-action@v9
-        with:
-          skip-save: true   # post-run cache upload hangs the job for 10+ min; the check itself is fast
       - name: nix flake check
+        # Eval-only gate. The full system build is verified on the server
+        # (10.0.0.2) where nix lives — a cold GitHub-Actions toplevel build
+        # (kernel/ZFS/initrd) takes 10+ min and is redundant with the server build.
         run: nix flake check --all-systems
-      - name: build configuration (eval gate)
-        run: nix build .#nixosConfigurations.homelab.config.system.build.toplevel --no-link
